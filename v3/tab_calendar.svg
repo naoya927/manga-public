@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+<title id="title">カレンダータブ</title>
+<desc id="desc">カレンダーを表すアイコン</desc>
+<rect x="18" y="24" width="124" height="112" rx="24" fill="#f8fafc" stroke="#10b981" stroke-width="8"/>
+<rect x="18" y="24" width="124" height="34" rx="24" fill="#10b981"/>
+<rect x="40" y="12" width="12" height="28" rx="6" fill="#0f172a"/>
+<rect x="108" y="12" width="12" height="28" rx="6" fill="#0f172a"/>
+<rect x="38" y="74" width="18" height="18" rx="5" fill="#3b82f6"/>
+<rect x="70" y="74" width="18" height="18" rx="5" fill="#10b981"/>
+<rect x="102" y="74" width="18" height="18" rx="5" fill="#f59e0b"/>
+<rect x="38" y="102" width="18" height="18" rx="5" fill="#10b981"/>
+<rect x="70" y="102" width="18" height="18" rx="5" fill="#0f172a" opacity="0.16"/>
+<rect x="102" y="102" width="18" height="18" rx="5" fill="#0f172a" opacity="0.16"/>
+</svg>

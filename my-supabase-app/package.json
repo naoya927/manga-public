@@ -1,0 +1,24 @@
+{
+  "name": "my-supabase-app",
+  "version": "1.0.0",
+  "description": "Manga review tracker powered by Supabase and Vercel",
+  "main": "src/app.ts",
+  "scripts": {
+    "build": "ts-node scripts/build-web-config.ts",
+    "check": "tsc --noEmit",
+    "dev": "npm run build && python3 -m http.server 4173 -d web",
+    "migrate:legacy": "ts-node scripts/migrate-local-data.ts",
+    "preview": "python3 -m http.server 4173 -d web",
+    "start": "npm run preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.0.0",
+    "typescript": "^4.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}

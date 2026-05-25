@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+<title id="title">お気に入りタブ</title>
+<desc id="desc">星とハイライトを表すアイコン</desc>
+<rect x="18" y="24" width="124" height="112" rx="24" fill="#fffaf0" stroke="#f59e0b" stroke-width="8"/>
+<path d="M80 42l10.9 22 24.1 3.5-17.5 17.1 4.1 24-21.6-11.3-21.6 11.3 4.1-24L45 67.5 69.1 64 80 42z" fill="#f59e0b"/>
+<circle cx="44" cy="48" r="6" fill="#10b981"/>
+<circle cx="118" cy="52" r="5" fill="#3b82f6"/>
+<circle cx="110" cy="112" r="6" fill="#10b981" opacity="0.9"/>
+</svg>

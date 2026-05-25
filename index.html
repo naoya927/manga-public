@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漫画感想記録</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --danger-color: #f44336;
+            --danger-hover: #da190b;
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e0e0e0;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 24px 0;
+            color: var(--text-main);
+        }
+
+        /* フォーム部分のスタイル */
+        .form-section, .list-header {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            background-color: #fafafa;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #ffffff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* リスト部分のスタイル */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+        }
+
+        .list-header h2 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .btn-delete-all {
+            padding: 8px 16px;
+            background-color: var(--danger-color);
+            color: white;
+            font-size: 0.85rem;
+        }
+
+        .btn-delete-all:hover {
+            background-color: var(--danger-hover);
+        }
+
+        #records-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .manga-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        .quote {
+            padding-left: 12px;
+            border-left: 4px solid var(--primary-color);
+            font-style: italic;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            word-break: break-all;
+        }
+
+        .thoughts {
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+        }
+
+        .tag {
+            background-color: #e8f5e9;
+            color: var(--primary-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .btn-delete {
+            padding: 6px 12px;
+            background-color: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            font-size: 0.8rem;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 漫画感想記録</h1>
+
+    <div class="form-section">
+        <form id="record-form">
+            <div class="input-group">
+                <label for="title">漫画タイトル <span style="color:red">*</span></label>
+                <input type="text" id="title" required placeholder="例：ハイキュー!!">
+            </div>
+            
+            <div class="input-group">
+                <label for="quote">名言・お気に入りセリフ</label>
+                <input type="text" id="quote" placeholder="例：ところで平凡な俺よ、下を向いている暇はあるのか">
+            </div>
+
+            <div class="input-group">
+                <label for="thoughts">感想 <span style="color:red">*</span></label>
+                <textarea id="thoughts" required placeholder="読んだ感想、考察、感情を自由に記録してください..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label for="tag">感情タグ</label>
+                <input type="text" id="tag" placeholder="例：熱い, 泣ける, 最高">
+            </div>
+
+            <button type="submit" class="btn-submit">保存する</button>
+        </form>
+    </div>
+
+    <div class="list-header">
+        <h2>記録一覧</h2>
+        <button id="btn-delete-all" class="btn-delete-all">全削除</button>
+    </div>
+
+    <div id="records-container">
+        <!-- 記録カードがここに追加されます -->
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'manga_impressions_db';
+    const form = document.getElementById('record-form');
+    const container = document.getElementById('records-container');
+    const btnDeleteAll = document.getElementById('btn-delete-all');
+
+    // データ読み込みと画面描画
+    function loadRecords() {
+        const records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        container.innerHTML = '';
+
+        if (records.length === 0) {
+            container.innerHTML = '<div class="empty-message">まだ記録がありません。<br>読んだ漫画の感想を残してみましょう！</div>';
+            return;
+        }
+
+        records.forEach(record => {
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const dateStr = new Date(record.id).toLocaleString('ja-JP', {
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            // テンプレートリテラルでHTML構築。表示時はエスケープ処理を行う
+            card.innerHTML = \`
+                <div class="card-header">
+                    <div class="manga-title">\${escapeHTML(record.title)}</div>
+                    <div class="date">\${dateStr}</div>
+                </div>
+                \${record.quote ? \`<div class="quote">「\${escapeHTML(record.quote)}」</div>\` : ''}
+                <div class="thoughts">\${escapeHTML(record.thoughts)}</div>
+                <div class="card-footer">
+                    \${record.tag ? \`<div class="tag">#\${escapeHTML(record.tag)}</div>\` : '<div></div>'}
+                    <button class="btn-delete" onclick="deleteRecord(\${record.id})">削除</button>
+                </div>
+            \`;
+            container.appendChild(card);
+        });
+    }
+
+    // 記録の保存
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById('title').value.trim();
+        const quote = document.getElementById('quote').value.trim();
+        const thoughts = document.getElementById('thoughts').value.trim();
+        const tag = document.getElementById('tag').value.trim();
+
+        if (!title || !thoughts) return;
+
+        const newRecord = {
+            id: Date.now(), // タイムスタンプをIDとして利用
+            title,
+            quote,
+            thoughts,
+            tag
+        };
+
+        const records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        records.unshift(newRecord); // 新しいものを一番上に追加
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+        form.reset();
+        loadRecords();
+    });
+
+    // 1件削除
+    window.deleteRecord = (id) => {
+        if (!confirm('この感想を削除してもよろしいですか？')) return;
+        
+        let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        records = records.filter(record => record.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        
+        loadRecords();
+    };
+
+    // 全件削除
+    btnDeleteAll.addEventListener('click', () => {
+        const records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        if (records.length === 0) return;
+        
+        if (!confirm('すべての記録を削除します。この操作は取り消せません。\\n本当によろしいですか？')) return;
+        
+        localStorage.removeItem(STORAGE_KEY);
+        loadRecords();
+    });
+
+    // XSS対策用文字エスケープ
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    // 初回読み込み実行
+    loadRecords();
+</script>
+</body>
+</html>

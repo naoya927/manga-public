@@ -1,0 +1,4087 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漫画感想記録</title>
+    <!--Rounded Gothic Font-->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #10B981;
+            --primary-hover: #059669;
+            --accent-color: #3B82F6;
+            --danger-color: #ef4444;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --border-radius: 16px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --tab-width: 160px;
+            --page-bg-image: url('bp.png');
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            position: relative;
+            isolation: isolate;
+        }
+
+        #page-bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background-image: var(--page-bg-image);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center top;
+        }
+
+        /* ===== 左サイドのタブバー ===== */
+        .tab-bar {
+            position: fixed;
+            left: 0; top: 0;
+            width: var(--tab-width);
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 24px;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn {
+            width: 130px; height: 130px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05); /* slightly visible drop zone */
+            border: 2px dashed transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 8px;
+        }
+
+        .tab-icon {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.3s ease;
+            opacity: 0.6; /* 選択されていない時は少し薄く */
+        }
+
+        .tab-btn:hover { background: rgba(255,255,255,0.1); }
+        .tab-btn:hover .tab-icon { opacity: 0.9; transform: scale(1.05); }
+
+        .tab-btn.dragover {
+            border-color: var(--primary-color);
+            background: rgba(16,185,129,0.2) !important;
+            transform: scale(1.05);
+        }
+
+        .tab-btn.active { 
+            background: rgba(16,185,129,0.15); /* 画像が見えるように半透明の緑背景 */
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.4); 
+        }
+        .tab-btn.active .tab-icon {
+            opacity: 1;
+        }
+
+        .tab-btn .tooltip {
+            display: none;
+            position: absolute;
+            left: calc(100% + 10px);
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .tab-btn:hover .tooltip { display: block; }
+
+        .tab-fallback-icon {
+            display: none;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: rgba(255,255,255,0.85);
+        }
+
+
+        /* ===== メインエリア ===== */
+        .main-area {
+            margin-left: var(--tab-width);
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }
+
+        .main-title-band {
+            width: 100%;
+            background: rgba(255,255,255,0.95);
+            padding: 40px 20px;
+            margin-bottom: 40px;
+            border-bottom: 4px solid var(--primary-color);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease;
+        }
+
+        h1 {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            margin: 0;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #0f172a 0%, var(--primary-hover) 80%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+            padding-bottom: 5px;
+        }
+
+        .tab-content {
+            display: none;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 0 24px 40px 24px;
+        }
+
+        #tab-records, #tab-calendar, #tab-favorites {
+            max-width: 100%;
+            padding: 0 32px 40px 32px;
+        }
+
+        .tab-content.active { display: block; animation: fadeIn 0.35s ease-out; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ===== 背景モード ===== */
+        body.bg-mode .tab-bar { transform: translateX(-100%); }
+        body.bg-mode .main-title-band { transform: translateY(-120%); opacity: 0; pointer-events: none; }
+        body.bg-mode .main-area .tab-content { transform: translateX(120%); opacity: 0; pointer-events: none; }
+
+
+        /* ===== パネル ===== */
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .form-section { padding: 40px; margin-bottom: 40px; }
+
+        /* ===== 入力フォーム ===== */
+        .title-image-row { display: flex; gap: 24px; align-items: flex-start; margin-bottom: 32px; }
+        .title-col { flex: 1; }
+        .image-col { width: 140px; display: flex; flex-direction: column; align-items: center; }
+
+        .image-preview-wrapper { position: relative; }
+
+        .image-preview {
+            width: 140px; height: 190px;
+            border: 3px dashed rgba(0,0,0,0.2);
+            border-radius: 12px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden; cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            background-color: rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+        }
+
+        .image-preview:hover, .image-preview.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(16,185,129,0.05);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(16,185,129,0.2);
+        }
+
+        .image-preview span {
+            font-size: 0.95rem; color: var(--text-muted);
+            text-align: center; pointer-events: none;
+            padding: 8px; font-weight: bold;
+        }
+
+        .clear-image-btn {
+            position: absolute; top: -10px; right: -10px;
+            width: 32px; height: 32px; border-radius: 50%;
+            background-color: var(--danger-color); color: white;
+            border: 2px solid #fff;
+            display: none;
+            align-items: center; justify-content: center;
+            font-size: 1.1rem; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+            transition: transform 0.2s ease;
+            font-weight: bold;
+        }
+
+        .clear-image-btn:hover { background-color: #dc2626; transform: scale(1.15); }
+
+        .input-group { margin-bottom: 32px; }
+        .title-col .input-group { margin-bottom: 0; }
+
+        label {
+            display: inline-block;
+            font-weight: 900; font-size: 1.45rem;
+            margin-bottom: 12px;
+            color: var(--primary-hover);
+            letter-spacing: 1.5px;
+            border-bottom: 4px solid rgba(16,185,129,0.3);
+            padding-bottom: 4px;
+        }
+
+        input[type="text"], input[type="date"], textarea {
+            width: 100%;
+            padding: 18px 20px;
+            background-color: #fff;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            font-size: 1.15rem; color: #0f172a;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder { color: rgba(0,0,0,0.3); }
+        input[type="text"]:focus, input[type="date"]:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(16,185,129,0.2); }
+
+        textarea { resize: vertical; min-height: 180px; line-height: 1.8; font-size: 1.1rem; }
+        textarea#quote, textarea.edit-quote { min-height: 80px; font-size: 1.3rem; font-style: italic; }
+        #title { font-size: 1.5rem; font-weight: bold; }
+
+        button { cursor: pointer; border: none; border-radius: 12px; font-size: 1.3rem; font-weight: 800; transition: all 0.3s ease; }
+
+        .btn-submit {
+            width: 100%; padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: #fff; margin-top: 16px;
+            box-shadow: 0 6px 20px rgba(59,130,246,0.3);
+            letter-spacing: 2px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .btn-submit:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(59,130,246,0.5); }
+
+        .btn-submit:disabled {
+            background: rgba(0,0,0,0.1); color: rgba(0,0,0,0.4);
+            box-shadow: none; cursor: not-allowed; transform: none;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 18px 20px;
+            background: rgba(16,185,129,0.1);
+            color: var(--primary-hover);
+            border: 2px solid rgba(16,185,129,0.2);
+            margin-top: 12px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-generate:hover {
+            background: rgba(16,185,129,0.15);
+        }
+
+        .btn-ai-generate {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 900;
+            background: rgba(16,185,129,0.12);
+            color: var(--primary-color);
+            border: 1px solid rgba(16,185,129,0.25);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-ai-generate:hover:not(:disabled) {
+            background: rgba(16,185,129,0.18);
+            transform: translateY(-2px);
+        }
+
+        .btn-ai-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== 過去の記録 ===== */
+        .records-header {
+            padding: 20px 32px; margin-bottom: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .records-header h2 { font-size: 1.8rem; color: #0f172a; margin: 0; letter-spacing: 2px; font-weight: 900; }
+
+        .records-header-main {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .records-header-note {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .records-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            min-width: min(620px, 100%);
+        }
+
+        .records-search-input {
+            width: min(320px, 100%);
+            padding: 12px 14px;
+            font-size: 1rem;
+            border-radius: 12px;
+        }
+
+        .records-toolbar button {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            background: rgba(15,23,42,0.06);
+            color: var(--text-main);
+            border: 1px solid rgba(15,23,42,0.12);
+        }
+
+        .records-toolbar button:hover {
+            background: rgba(15,23,42,0.12);
+        }
+
+        .records-filter-status {
+            margin: 12px 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .calendar-shell {
+            padding: 28px;
+        }
+
+        .calendar-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-month-label {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 1px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            background: rgba(16,185,129,0.12);
+            color: var(--primary-hover);
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+
+        .calendar-stage {
+            position: relative;
+            padding: 16px;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(248,250,252,0.96), rgba(240,253,250,0.92));
+            border: 1px solid rgba(15,23,42,0.08);
+            box-shadow: 0 18px 38px rgba(15,23,42,0.08);
+        }
+
+        .calendar-entry-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.38);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow-y: auto;
+            z-index: 1600;
+        }
+
+        .calendar-entry-panel {
+            width: min(720px, calc(100% - 16px));
+            max-height: min(720px, calc(100vh - 48px));
+            background: #ffffff;
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(15,23,42,0.18);
+            padding: 22px;
+            overflow-y: auto;
+        }
+
+        .calendar-entry-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            background: #ffffff;
+            border-bottom: 1px solid rgba(15,23,42,0.08);
+            padding-bottom: 12px;
+        }
+
+        .calendar-entry-panel h3 {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .calendar-entry-close {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.06);
+            color: var(--text-main);
+            border: 1px solid rgba(15,23,42,0.08);
+            font-size: 1.1rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .calendar-form {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 120px 120px auto auto;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .calendar-title-field {
+            position: relative;
+        }
+
+        .calendar-form input {
+            padding: 12px 14px;
+            font-size: 1rem;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid rgba(148,163,184,0.35);
+        }
+
+        .calendar-title-suggestions {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid rgba(15,23,42,0.1);
+            border-radius: 16px;
+            box-shadow: 0 18px 34px rgba(15,23,42,0.14);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        .calendar-title-suggestion {
+            width: 100%;
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: transparent;
+            color: #0f172a;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 800;
+        }
+
+        .calendar-title-suggestion:hover {
+            background: rgba(16,185,129,0.1);
+        }
+
+        .calendar-form button {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            border-radius: 12px;
+        }
+
+        .calendar-form-submit {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: #fff;
+        }
+
+        .calendar-form-reset {
+            background: rgba(15,23,42,0.06);
+            color: var(--text-main);
+            border: 1px solid rgba(15,23,42,0.12);
+        }
+
+        .calendar-form-note {
+            margin-bottom: 18px;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: #ffffff;
+            border: 1px solid rgba(148,163,184,0.18);
+        }
+
+        .calendar-selected-note {
+            margin-bottom: 14px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: #ffffff;
+            border: 1px solid rgba(148,163,184,0.18);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 1px;
+            background: rgba(148,163,184,0.28);
+            border: 1px solid rgba(148,163,184,0.24);
+            border-radius: 22px;
+            overflow: hidden;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-size: 0.92rem;
+            font-weight: 900;
+            color: var(--text-muted);
+            padding: 12px 4px;
+            background: rgba(255,255,255,0.98);
+            letter-spacing: 0.08em;
+        }
+
+        .calendar-weekday.is-sunday {
+            color: #dc2626;
+            background: linear-gradient(180deg, rgba(254,242,242,0.96), rgba(255,255,255,1));
+        }
+
+        .calendar-weekday.is-saturday {
+            color: #2563eb;
+            background: linear-gradient(180deg, rgba(239,246,255,0.96), rgba(255,255,255,1));
+        }
+
+        .calendar-cell {
+            min-height: 182px;
+            border-radius: 0;
+            border: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .calendar-cell:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(180deg, rgba(255,255,255,1), rgba(240,253,250,0.86));
+            box-shadow: inset 0 0 0 1px rgba(16,185,129,0.28);
+        }
+
+        .calendar-cell.is-outside {
+            visibility: visible;
+            pointer-events: none;
+            background: rgba(255,255,255,0.98);
+            box-shadow: none;
+        }
+
+        .calendar-cell.is-sunday {
+            background: linear-gradient(180deg, rgba(254,242,242,0.72), rgba(255,255,255,0.98));
+        }
+
+        .calendar-cell.is-saturday {
+            background: linear-gradient(180deg, rgba(239,246,255,0.88), rgba(255,255,255,0.98));
+        }
+
+        .calendar-cell.is-today {
+            box-shadow: inset 0 0 0 2px rgba(59,130,246,0.32);
+        }
+
+        .calendar-cell.is-selected {
+            background: linear-gradient(180deg, rgba(16,185,129,0.18), rgba(255,255,255,1));
+            box-shadow: inset 0 0 0 2px rgba(16,185,129,0.55);
+        }
+
+        .calendar-cell.has-records .calendar-day-number {
+            color: var(--primary-hover);
+            background: rgba(16,185,129,0.12);
+        }
+
+        .calendar-day-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 10px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .calendar-cell-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(148,163,184,0.22);
+        }
+
+        .calendar-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            min-width: 34px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(16,185,129,0.16);
+            color: var(--primary-hover);
+            font-size: 0.8rem;
+            font-weight: 900;
+        }
+
+        .calendar-cell-entries {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            overflow: visible;
+        }
+
+        .calendar-cell-entry {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.98);
+            border: 1px solid rgba(15,23,42,0.08);
+            border-left: 4px solid rgba(16,185,129,0.7);
+            padding: 9px 10px;
+            box-shadow: 0 8px 16px rgba(15,23,42,0.06);
+            cursor: grab;
+            user-select: none;
+        }
+
+        .calendar-cell-entry:active {
+            cursor: grabbing;
+        }
+
+        .calendar-cell.is-drop-target {
+            background: linear-gradient(180deg, rgba(16,185,129,0.22), rgba(255,255,255,1));
+            box-shadow: inset 0 0 0 2px rgba(16,185,129,0.82);
+            transform: none;
+        }
+
+        .calendar-cell-entry-title {
+            font-size: 0.84rem;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .calendar-cell-entry-volume {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(59,130,246,0.08);
+            font-size: 0.72rem;
+            color: var(--accent-color);
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .calendar-cell-empty {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            line-height: 1.5;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-radius: 14px;
+            border: 1px dashed rgba(148,163,184,0.4);
+            background: rgba(255,255,255,0.56);
+        }
+
+        .calendar-record-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .calendar-record-card {
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 16px;
+            text-align: left;
+            box-shadow: 0 10px 22px rgba(15,23,42,0.05);
+        }
+
+        .calendar-record-volume {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-color);
+            font-size: 0.88rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .calendar-record-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 14px;
+        }
+
+        .calendar-record-edit,
+        .calendar-record-delete {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 900;
+        }
+
+        .calendar-record-edit {
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(59,130,246,0.18);
+        }
+
+        .calendar-record-delete {
+            background: rgba(239,68,68,0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239,68,68,0.18);
+        }
+
+        .calendar-record-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .calendar-record-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .accordion-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .accordion-item { border-radius: var(--border-radius); overflow: hidden; box-shadow: var(--shadow); }
+
+        .accordion-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 28px;
+            background-color: var(--card-bg);
+            cursor: pointer; border: none; width: 100%;
+            text-align: left;
+            font-size: 1.45rem; font-weight: 900;
+            color: #0f172a; letter-spacing: 1px;
+            transition: background-color 0.2s ease;
+            border-left: 6px solid var(--primary-color);
+        }
+
+        .accordion-header:hover { background-color: #f1f5f9; }
+
+        .accordion-header .acc-date { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; margin-left: 16px; }
+        .accordion-header .acc-arrow { font-size: 1.2rem; color: var(--text-muted); transition: transform 0.3s ease; margin-left: 12px; flex-shrink: 0; }
+        .accordion-item.open .accordion-header .acc-arrow { transform: rotate(180deg); }
+
+        .accordion-body {
+            max-height: 0; overflow: hidden;
+            background-color: var(--card-bg);
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 28px;
+        }
+
+        .accordion-item.open .accordion-body { max-height: 3000px; padding: 20px 28px 28px 28px; }
+
+        .acc-content-image {
+            width: 100%; max-height: 400px;
+            object-fit: contain; margin-bottom: 20px;
+            border-radius: 12px; background: rgba(0,0,0,0.03);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .acc-quote {
+            padding: 20px 24px;
+            border-left: 8px solid var(--primary-color);
+            background: linear-gradient(90deg, rgba(16,185,129,0.1) 0%, transparent 100%);
+            border-radius: 0 12px 12px 0;
+            font-style: italic; color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 1.5rem; font-weight: 900;
+            word-break: break-all; line-height: 1.6;
+        }
+
+        .acc-thoughts {
+            margin-bottom: 20px; white-space: pre-wrap;
+            word-break: break-all; font-size: 1.15rem;
+            color: var(--text-main); line-height: 1.9;
+        }
+
+        .acc-tag {
+            display: inline-block;
+            background-color: rgba(59,130,246,0.1); color: var(--accent-color);
+            padding: 8px 20px; border-radius: 30px;
+            font-size: 1rem; font-weight: 900;
+            border: 2px solid rgba(59,130,246,0.2);
+            letter-spacing: 1px;
+        }
+
+        .empty-message { text-align: center; color: var(--text-muted); padding: 50px 0; font-size: 1.3rem; font-weight: bold; }
+
+        /* ===== グリッドレイアウト ===== */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .manga-card {
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            text-align: center;
+            overflow: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            will-change: transform;
+            transition:
+                transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.12s ease,
+                border-color 0.12s ease,
+                background 0.12s ease;
+            --press-x: 50%;
+            --press-y: 50%;
+            --press-shift-x: 0px;
+            --press-shift-y: 0px;
+        }
+
+        .manga-card::before {
+            content: '';
+            position: absolute;
+            inset: -24%;
+            background:
+                radial-gradient(circle at var(--press-x) var(--press-y),
+                rgba(16,185,129,0.26) 0%,
+                rgba(59,130,246,0.12) 18%,
+                rgba(255,255,255,0.0) 44%);
+            opacity: 0;
+            transform: scale(0.86);
+            transition: opacity 0.18s ease, transform 0.22s ease;
+            pointer-events: none;
+        }
+
+        .manga-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 38%, rgba(15,23,42,0.08) 100%);
+            opacity: 0;
+            transition: opacity 0.18s ease;
+            pointer-events: none;
+        }
+
+        .manga-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .manga-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+
+        .manga-card:hover::before,
+        .manga-card.is-pointer-over::before,
+        .manga-card:active::before,
+        .manga-card.is-pressing::before,
+        .manga-card.is-releasing::before {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .manga-card:hover::after,
+        .manga-card.is-pointer-over::after,
+        .manga-card:active::after,
+        .manga-card.is-pressing::after,
+        .manga-card.is-releasing::after {
+            opacity: 1;
+        }
+
+        .manga-card:active,
+        .manga-card.is-pressing {
+            transform: translate3d(var(--press-shift-x), calc(var(--press-shift-y) + 1px), 0) scale(0.965);
+            box-shadow:
+                inset 0 10px 18px rgba(15,23,42,0.08),
+                inset 0 -2px 6px rgba(255,255,255,0.65),
+                0 4px 12px rgba(0,0,0,0.12);
+            border-color: var(--primary-hover);
+            background: linear-gradient(180deg, rgba(240,253,250,0.98), rgba(255,255,255,1));
+        }
+
+        .manga-card.is-releasing {
+            transform: translate3d(calc(var(--press-shift-x) * 0.35), calc(var(--press-shift-y) * 0.35), 0) scale(0.985);
+            box-shadow:
+                inset 0 6px 14px rgba(15,23,42,0.05),
+                0 10px 22px rgba(16,185,129,0.18);
+            border-color: var(--primary-color);
+            background: linear-gradient(180deg, rgba(236,253,245,0.98), rgba(255,255,255,1));
+        }
+
+        .manga-card:active .manga-card-title,
+        .manga-card.is-pressing .manga-card-title,
+        .manga-card.is-releasing .manga-card-title {
+            transform: scale(0.985);
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .manga-card {
+                border-color: rgba(16,185,129,0.14);
+                background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+                box-shadow:
+                    0 12px 26px rgba(15,23,42,0.10),
+                    inset 0 1px 0 rgba(255,255,255,0.85);
+            }
+
+            .manga-card::before {
+                opacity: 0.34;
+                transform: scale(0.98);
+            }
+
+            .manga-card:not(.is-pressing):not(.is-releasing) {
+                animation: card-ready-float 2.8s ease-in-out infinite;
+            }
+
+            .manga-card.is-pressing {
+                transform: translate3d(var(--press-shift-x), calc(var(--press-shift-y) + 2px), 0) scale(0.935);
+                box-shadow:
+                    inset 0 14px 24px rgba(15,23,42,0.10),
+                    inset 0 -3px 8px rgba(255,255,255,0.72),
+                    0 5px 10px rgba(0,0,0,0.12);
+            }
+        }
+
+        @keyframes card-ready-float {
+            0%, 100% {
+                transform: translateY(0);
+                box-shadow:
+                    0 12px 26px rgba(15,23,42,0.10),
+                    inset 0 1px 0 rgba(255,255,255,0.85);
+            }
+            50% {
+                transform: translateY(-2px);
+                box-shadow:
+                    0 16px 30px rgba(16,185,129,0.14),
+                    inset 0 1px 0 rgba(255,255,255,0.92);
+            }
+        }
+
+        .manga-card-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: var(--text-main);
+            word-break: break-all;
+            line-height: 1.4;
+            max-height: 3.8em;
+            overflow: hidden;
+            transition: transform 0.18s ease;
+        }
+
+        .manga-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        .manga-card .star-btn { font-size: 1.4rem; padding: 2px 4px; }
+        .manga-card .edit-btn { padding: 3px 8px; font-size: 0.75rem; margin-top: 0; }
+        .delete-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            background: rgba(239,68,68,0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239,68,68,0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 16px;
+        }
+
+        .delete-btn:hover { background: rgba(239,68,68,0.18); }
+
+        .manga-card .delete-btn { padding: 3px 8px; font-size: 0.75rem; margin-top: 0; }
+
+        /* ===== モーダル ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            width: 95vw;
+            max-width: 1400px;
+            max-height: 90vh;
+            overflow: hidden;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .modal-dual {
+            display: flex;
+            gap: 32px;
+            min-height: 0;
+            max-height: calc(90vh - 64px);
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .modal-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .modal-right {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .gallery-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.03);
+            flex: 1;
+            min-height: 120px;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            cursor: zoom-in;
+        }
+
+        .gallery-item .gallery-remove {
+            position: absolute;
+            top: 8px; right: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 28px; height: 28px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .gallery-item:hover .gallery-remove { display: flex; }
+        .gallery-item .gallery-remove:hover { background: var(--danger-color); }
+
+        .gallery-dropzone {
+            border: 3px dashed rgba(0,0,0,0.15);
+            border-radius: 12px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 16px;
+        }
+
+        .gallery-dropzone:hover, .gallery-dropzone.dragover {
+            border-color: var(--primary-color);
+            background: rgba(16,185,129,0.05);
+            color: var(--primary-color);
+        }
+
+        .gallery-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: bold;
+            text-align: center;
+        }
+
+        @media (max-width: 800px) {
+            .modal-dual { flex-direction: column; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 20px;
+            background: none; border: none;
+            font-size: 2rem; cursor: pointer;
+            color: var(--text-muted);
+            line-height: 1;
+            z-index: 1;
+        }
+
+        .modal-close:hover { color: var(--danger-color); transform: scale(1.2); }
+
+        .image-lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(15,23,42,0.84);
+            backdrop-filter: blur(8px);
+        }
+
+        .image-lightbox-overlay.active {
+            display: flex;
+        }
+
+        .image-lightbox-inner {
+            position: relative;
+            width: min(96vw, 1200px);
+            max-height: min(96vh, 96dvh);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-lightbox-img {
+            max-width: 100%;
+            max-height: min(92vh, 92dvh);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.06);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.34);
+            object-fit: contain;
+        }
+
+        .image-lightbox-close {
+            position: absolute;
+            top: -14px;
+            right: -14px;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.28);
+            font-size: 1.4rem;
+            font-weight: 900;
+            line-height: 1;
+            backdrop-filter: blur(6px);
+        }
+
+        .previewable-image {
+            cursor: zoom-in;
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            padding-right: 40px;
+        }
+
+        .modal-date {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: bold;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 820px) {
+            .tab-bar {
+                top: auto;
+                bottom: 0;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 12px max(12px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right));
+                box-shadow: 0 -8px 24px rgba(0,0,0,0.16);
+            }
+
+            body.bg-mode .tab-bar {
+                transform: translateY(100%);
+            }
+
+            .tab-btn {
+                width: min(22vw, 86px);
+                height: min(22vw, 86px);
+                padding: 6px;
+                flex: 0 0 auto;
+            }
+
+            .tab-btn .tooltip {
+                display: none !important;
+            }
+
+            .main-area {
+                margin-left: 0;
+                padding-bottom: 108px;
+            }
+
+            .main-title-band {
+                padding: 26px 16px;
+                margin-bottom: 24px;
+            }
+
+            .tab-content,
+            #tab-records,
+            #tab-calendar,
+            #tab-favorites {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .form-section {
+                padding: 24px 18px;
+                margin-bottom: 24px;
+            }
+
+            .title-image-row {
+                flex-direction: column;
+            }
+
+            .image-col {
+                width: 100%;
+                align-items: stretch;
+            }
+
+            .image-preview {
+                width: 100%;
+                height: min(58vw, 240px);
+            }
+
+            .records-header {
+                padding: 18px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+
+            .records-toolbar {
+                width: 100%;
+                min-width: 0;
+                justify-content: stretch;
+            }
+
+            .records-toolbar > * {
+                flex: 1 1 100%;
+            }
+
+            .calendar-topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .calendar-nav {
+                width: 100%;
+            }
+
+            .calendar-nav button {
+                flex: 1 1 0;
+            }
+
+            .calendar-stage {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .calendar-grid {
+                min-width: max(100%, 540px);
+            }
+
+            .calendar-entry-overlay {
+                align-items: flex-end;
+                padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px;
+                background: rgba(15,23,42,0.22);
+                backdrop-filter: blur(6px);
+            }
+
+            .calendar-entry-panel {
+                width: min(720px, 100%);
+                max-height: min(88vh, calc(100dvh - 20px));
+                border-radius: 24px;
+                padding: 18px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .calendar-entry-header {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                background: rgba(255,255,255,0.98);
+                padding-bottom: 8px;
+            }
+
+            .calendar-record-list {
+                grid-template-columns: 1fr;
+            }
+
+            .accordion-header {
+                flex-wrap: wrap;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .accordion-header .acc-date {
+                margin-left: 0;
+            }
+
+            .accordion-header .acc-arrow {
+                margin-left: auto;
+            }
+
+            .acc-bottom-row,
+            .modal-action-row,
+            .edit-btn-row,
+            .edit-image-actions,
+            .calendar-record-actions,
+            .search-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .modal-overlay {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            .modal-content {
+                width: 100%;
+                max-width: none;
+                height: min(100vh, 100dvh);
+                max-height: min(100vh, 100dvh);
+                overflow-y: auto;
+                overflow-x: hidden;
+                -webkit-overflow-scrolling: touch;
+                border-radius: 24px 24px 0 0;
+                padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)) 16px;
+            }
+
+            #modal-body {
+                overflow: visible;
+            }
+
+            .modal-dual {
+                flex-direction: column;
+                gap: 20px;
+                flex: none;
+                max-height: none;
+                overflow: visible;
+            }
+
+            .modal-left,
+            .modal-right {
+                min-height: auto;
+                overflow: visible;
+                padding-right: 0;
+            }
+
+            .modal-right {
+                order: 1;
+            }
+
+            .modal-left {
+                order: 2;
+            }
+
+            .gallery-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+                gap: 10px;
+                flex: none;
+            }
+
+            .gallery-item {
+                min-height: 100px;
+            }
+
+            .modal-title {
+                font-size: 1.6rem;
+                padding-right: 48px;
+            }
+
+            .acc-thoughts {
+                font-size: 1rem;
+                line-height: 1.75;
+            }
+
+            .acc-quote {
+                font-size: 1.12rem;
+                padding: 16px 18px;
+            }
+
+            .acc-content-image,
+            #main-image-dropzone {
+                max-height: 240px;
+            }
+
+            .modal-action-row > * {
+                width: 100%;
+            }
+
+            .image-lightbox-overlay {
+                padding: 16px;
+            }
+
+            .image-lightbox-inner {
+                width: 100%;
+                max-height: min(100vh, 100dvh);
+            }
+
+            .image-lightbox-img {
+                max-height: min(86vh, 86dvh);
+                border-radius: 16px;
+            }
+
+            .image-lightbox-close {
+                top: -10px;
+                right: -2px;
+            }
+
+            #modal-body .edit-form {
+                max-height: none !important;
+                padding-right: 0 !important;
+            }
+
+            .search-bar button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 1200px) { .records-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (max-width: 900px) { .records-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 600px) { .records-grid { grid-template-columns: repeat(3, 1fr); } .manga-card-title { font-size: 0.85rem; } }
+
+        /* ===== 画像検索パネル ===== */
+        .search-panel {
+            margin-top: 24px;
+            border-top: 2px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-bar input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .search-bar button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .search-bar button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+        }
+
+        .search-results {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .search-thumb {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.05);
+        }
+
+        .search-thumb:hover {
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .search-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .search-loading {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 600px) { .search-results { grid-template-columns: repeat(2, 1fr); } }
+
+        /* ===== ⭐ お気に入りボタン ===== */
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .star-btn:hover {
+            transform: scale(1.3);
+        }
+
+        .star-btn.favorited {
+            filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.8));
+        }
+
+        .acc-bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        /* ===== 編集ボタン ===== */
+        .edit-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 8px;
+            font-size: 0.95rem; font-weight: bold;
+            background: rgba(59,130,246,0.1); color: var(--accent-color);
+            border: 1px solid rgba(59,130,246,0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 16px;
+        }
+
+        .edit-btn:hover { background: rgba(59,130,246,0.2); }
+
+        /* ===== 編集フォーム（アコーディオン内） ===== */
+        .edit-form { margin-top: 20px; border-top: 2px solid var(--border-color); padding-top: 20px; }
+
+        .edit-form .edit-group { margin-bottom: 16px; }
+
+        .edit-form label {
+            font-size: 1rem; font-weight: 700;
+            color: var(--accent-color);
+            border-bottom: 2px solid rgba(59,130,246,0.2);
+            margin-bottom: 8px;
+        }
+
+        .edit-form input[type="text"], .edit-form textarea {
+            padding: 14px 16px; font-size: 1rem;
+        }
+
+        .edit-form textarea { min-height: 120px; }
+
+        .edit-image-drop {
+            width: 100%; min-height: 120px; max-height: 200px;
+            border: 3px dashed rgba(0,0,0,0.15);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; cursor: pointer;
+            background-size: cover; background-position: center;
+            background-color: rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .edit-image-drop:hover, .edit-image-drop.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(16,185,129,0.05);
+        }
+
+        .edit-image-drop span {
+            font-size: 0.9rem; color: var(--text-muted);
+            font-weight: bold; text-align: center;
+            pointer-events: none;
+        }
+
+        .edit-image-actions {
+            display: flex; gap: 8px; margin-top: 8px;
+        }
+
+        .edit-image-actions button {
+            padding: 6px 14px; border-radius: 8px;
+            font-size: 0.85rem; font-weight: bold;
+        }
+
+        .edit-image-clear {
+            background: rgba(239,68,68,0.1); color: var(--danger-color);
+            border: 1px solid rgba(239,68,68,0.2);
+        }
+
+        .edit-image-clear:hover { background: rgba(239,68,68,0.2); }
+
+        .edit-btn-row {
+            display: flex; gap: 12px; margin-top: 20px;
+        }
+
+        .btn-save-edit {
+            flex: 1; padding: 14px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+            letter-spacing: 1px;
+        }
+
+        .btn-save-edit:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(59,130,246,0.4); }
+
+        .btn-cancel-edit {
+            flex: 1; padding: 14px;
+            background: rgba(0,0,0,0.05); color: var(--text-muted);
+        }
+
+        .btn-cancel-edit:hover { background: rgba(0,0,0,0.1); }
+
+        /* ===== レスポンシブ ===== */
+        @media (max-width: 600px) {
+            :root { --tab-width: 90px; }
+            .title-image-row { flex-direction: column; }
+            .image-col { width: 100%; }
+            .image-preview { width: 100%; height: 180px; }
+            .tab-btn { width: 70px; height: 70px; }
+            .accordion-header { font-size: 1.2rem; padding: 16px 20px; }
+            .acc-quote { font-size: 1.2rem; }
+            h1 { font-size: 2rem; white-space: normal; letter-spacing: 4px; }
+            .records-header { padding: 18px 20px; align-items: stretch; }
+            .records-toolbar { min-width: 100%; justify-content: stretch; }
+            .records-search-input { width: 100%; }
+            .calendar-shell { padding: 20px; }
+            .calendar-entry-overlay { padding: 10px; }
+            .calendar-entry-panel { width: 100%; padding: 16px; }
+            .calendar-form { grid-template-columns: 1fr; }
+            .calendar-stage { padding: 8px; border-radius: 20px; }
+            .calendar-grid { min-width: max(100%, 480px); }
+            .calendar-cell { min-height: 98px; padding: 6px; gap: 6px; }
+            .calendar-day-number { min-width: 30px; height: 30px; padding: 0 8px; font-size: 0.92rem; }
+            .calendar-count-badge { min-width: 28px; padding: 4px 8px; font-size: 0.74rem; }
+            .calendar-cell-entry { padding: 8px; }
+            .calendar-cell-entry-title { font-size: 0.7rem; }
+            .calendar-cell-entry-volume { font-size: 0.66rem; padding: 4px 6px; }
+            .calendar-weekday { font-size: 0.8rem; padding: 10px 2px; }
+        }
+    </style>
+</head>
+<body>
+<div id="page-bg-layer" aria-hidden="true"></div>
+
+<nav class="tab-bar" id="tab-bar">
+    <button class="tab-btn active" data-tab="input" id="tab-btn-input" onclick="switchTab('input')" title="ここに画像をドロップして変更">
+        <img src="tab_input.png" alt="感想を記録" class="tab-icon" id="tab-img-input" onerror="this.style.display='none'">
+        <span class="tooltip">感想を記録</span>
+    </button>
+    <button class="tab-btn" data-tab="calendar" id="tab-btn-calendar" onclick="switchTab('calendar')" title="ここに画像をドロップして変更">
+        <img src="tab_calendar.svg" alt="カレンダー" class="tab-icon" id="tab-img-calendar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <span class="tab-fallback-icon">📅</span>
+        <span class="tooltip">カレンダー</span>
+    </button>
+    <button class="tab-btn" data-tab="records" id="tab-btn-records" onclick="switchTab('records')" title="ここに画像をドロップして変更">
+        <img src="tab_records.svg" alt="過去の記録" class="tab-icon" id="tab-img-records" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <span class="tab-fallback-icon">📚</span>
+        <span class="tooltip">過去の記録</span>
+    </button>
+    <button class="tab-btn" data-tab="favorites" id="tab-btn-favorites" onclick="switchTab('favorites')" title="ここに画像をドロップして変更">
+        <img src="tab_favorites.svg" alt="お気に入り" class="tab-icon" id="tab-img-favorites" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <span class="tab-fallback-icon">⭐</span>
+        <span class="tooltip">お気に入り</span>
+    </button>
+</nav>
+
+<div class="main-area" id="main-area">
+    <div class="main-title-band"><h1>漫画感想記録</h1></div>
+
+    <!-- タブ1: 感想記録 -->
+    <div class="tab-content active" id="tab-input">
+        <div class="panel form-section">
+            <form id="record-form" onsubmit="event.preventDefault(); saveRecord();">
+                <div class="title-image-row">
+                    <div class="title-col">
+                        <div class="input-group">
+                            <label for="title">漫画タイトル <span style="color:red">*</span></label>
+                            <input type="text" id="title" required placeholder="例：ハイキュー!!">
+                        </div>
+                    </div>
+                    <div class="image-col">
+                        <label>表紙・画像</label>
+                        <input type="file" id="image-input" accept="image/*" style="display:none;">
+                        <div class="image-preview-wrapper">
+                            <div class="image-preview" id="image-preview-box">
+                                <span id="preview-text">画像を追加<br><small>(ドラッグ＆ドロップ)</small></span>
+                            </div>
+                            <button type="button" class="clear-image-btn" id="clear-image-btn" title="画像を削除">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="quote">名言・お気に入りセリフ</label>
+                    <textarea id="quote" placeholder="例：ところで平凡な俺よ、下を向いている暇はあるのか"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="thoughts">感想 <span style="color:red">*</span></label>
+                    <textarea id="thoughts" required placeholder="読んだ感想、考察、感情などを自由に記録してください..."></textarea>
+                </div>
+
+                <button type="button" class="btn-generate" id="generate-summary-btn" onclick="generateBulletSummary()">🧠 AIで箇条書きにまとめる</button>
+
+                <div class="input-group">
+                    <label for="tag">感情タグ</label>
+                    <input type="text" id="tag" placeholder="例：熱い, 泣ける, 最高">
+                </div>
+
+                <div class="input-group">
+                    <label for="bullet-summary">箇条書きまとめ</label>
+                    <textarea id="bullet-summary" placeholder="「AIで箇条書きにまとめる」を押すと要約が入ります（必要なら手で編集OK）"></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submit-btn">保存する</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- タブ2: カレンダー -->
+    <div class="tab-content" id="tab-calendar">
+        <div class="panel calendar-shell">
+            <div class="calendar-topbar">
+                <div>
+                    <div class="calendar-month-label" id="calendar-month-label">カレンダー</div>
+                    <div class="records-header-note">日付マスに読書ログをそのまま表示します。クリックで追加・編集、ドラッグで日付移動できます。</div>
+                </div>
+                <div class="calendar-nav">
+                    <button type="button" onclick="changeCalendarMonth(-1)">← 前の月</button>
+                    <button type="button" onclick="jumpCalendarToToday()">今月</button>
+                    <button type="button" onclick="changeCalendarMonth(1)">次の月 →</button>
+                </div>
+            </div>
+            <div id="calendar-root"></div>
+        </div>
+    </div>
+    <div id="calendar-popover-root"></div>
+
+    <!-- タブ3: 過去の記録 -->
+    <div class="tab-content" id="tab-records">
+        <div class="panel records-header">
+            <div class="records-header-main">
+                <h2>過去の記録</h2>
+                <span class="records-header-note">⭐でお気に入り登録 ・ クリックで詳細表示</span>
+            </div>
+            <div class="records-toolbar">
+                <input type="text" id="records-search-input" class="records-search-input" placeholder="漫画タイトルの先頭で検索" oninput="handleRecordsFilterChange()">
+                <button type="button" onclick="resetRecordsFilters()">条件をクリア</button>
+            </div>
+        </div>
+        <div class="records-filter-status" id="records-filter-status"></div>
+        <div class="records-grid" id="records-container"></div>
+    </div>
+
+    <!-- タブ4: お気に入り -->
+    <div class="tab-content" id="tab-favorites">
+        <div class="panel records-header">
+            <h2>⭐ お気に入り</h2>
+            <span style="font-size:0.9rem; color:var(--text-muted); font-weight:bold;">星マークで登録した漫画</span>
+        </div>
+        <div class="records-grid" id="favorites-container"></div>
+    </div>
+
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+    <div class="modal-content" id="modal-content">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div id="modal-body"></div>
+    </div>
+</div>
+<div class="image-lightbox-overlay" id="image-lightbox" onclick="if(event.target===this) closeImageLightbox()">
+    <div class="image-lightbox-inner">
+        <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()">✕</button>
+        <img id="image-lightbox-img" class="image-lightbox-img" alt="拡大画像">
+    </div>
+</div>
+
+<script>
+    // ===== タブ切り替え =====
+    async function switchTab(tabId, options = {}) {
+        const { fromHistory = false } = options;
+        if (tabId !== 'calendar' && calendarState.isEntryPopoverOpen) {
+            calendarState.isEntryPopoverOpen = false;
+            unlockCalendarBodyScroll();
+            const popoverRoot = document.getElementById('calendar-popover-root');
+            if (popoverRoot) popoverRoot.innerHTML = '';
+        }
+        document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        if (tabId === 'calendar') await loadCalendarView();
+        if (tabId === 'records') await loadRecords();
+        if (tabId === 'favorites') await loadFavorites();
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    // ===== 背景トグル（白いパネル以外をクリックで切り替え） =====
+    let bgMode = false;
+
+    function toggleBg(forceValue = null) {
+        bgMode = typeof forceValue === 'boolean' ? forceValue : !bgMode;
+        document.body.classList.toggle('bg-mode', bgMode);
+    }
+
+    // main-area 内でクリックされたとき、パネル要素の外なら背景トグル
+    document.getElementById('main-area').addEventListener('click', (e) => {
+        // パネル（.panel, .accordion-item, .main-title-band, .manga-cardなど）上のクリックは無視
+        if (e.target.closest('.panel, .accordion-item, .main-title-band, .records-header, .records-filter-status, .manga-card, .calendar-entry-overlay, .calendar-entry-panel, .calendar-title-suggestions, .calendar-record-card')) return;
+        toggleBg();
+    });
+
+    // タブバーのクリックは何もしない
+    document.getElementById('tab-bar').addEventListener('click', (e) => e.stopPropagation());
+
+    // 背景モード中は body クリックで戻る
+    document.body.addEventListener('click', (e) => {
+        if (!bgMode) return;
+        if (e.target.closest('#main-area, #tab-bar')) return;
+        toggleBg();
+    });
+
+    // ===== 背景画像のカスタマイズ（ドラッグ＆ドロップ） =====
+    function setPageBackgroundImage(value) {
+        document.body.style.setProperty('--page-bg-image', value);
+    }
+
+    const savedBgInfo = localStorage.getItem('custom_bg_image');
+    if (savedBgInfo) {
+        setPageBackgroundImage(`url(${savedBgInfo})`);
+    }
+
+    document.body.addEventListener('dragover', (e) => {
+        if (bgMode) e.preventDefault();
+    });
+
+    document.body.addEventListener('drop', (e) => {
+        if (!bgMode) return;
+        e.preventDefault();
+        if (e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const b64 = ev.target.result;
+                setPageBackgroundImage(`url(${b64})`);
+                localStorage.setItem('custom_bg_image', b64);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // ===== 新規入力の画像処理 =====
+    let currentImageBase64 = '';
+    const dropZone = document.getElementById('image-preview-box');
+    const fileInput = document.getElementById('image-input');
+    const previewText = document.getElementById('preview-text');
+    const clearImageBtn = document.getElementById('clear-image-btn');
+
+    dropZone.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+    fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) { handleFile(e.dataTransfer.files[0]); fileInput.files = e.dataTransfer.files; }
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) { alert('画像ファイルを選択してください。'); return; }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentImageBase64 = e.target.result;
+            dropZone.style.backgroundImage = `url(${currentImageBase64})`;
+            previewText.style.display = 'none';
+            clearImageBtn.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+        currentImageBase64 = '';
+        fileInput.value = '';
+        dropZone.style.backgroundImage = 'none';
+        previewText.style.display = 'block';
+        clearImageBtn.style.display = 'none';
+    }
+
+    clearImageBtn.addEventListener('click', (e) => { e.stopPropagation(); clearImage(); });
+
+    // ===== タブのドラッグ＆ドロップ画像変更 =====
+    function setupTabDrop(btnId, imgId, storageKey) {
+        const btn = document.getElementById(btnId);
+        const img = document.getElementById(imgId);
+        const fallbackIcon = img?.nextElementSibling?.classList?.contains('tab-fallback-icon')
+            ? img.nextElementSibling
+            : null;
+        
+        // localStorage から復元
+        const savedImg = localStorage.getItem(storageKey);
+        if (savedImg) {
+            img.src = savedImg;
+            img.style.display = 'block';
+            if (fallbackIcon) fallbackIcon.style.display = 'none';
+        }
+
+        btn.addEventListener('dragover', e => { e.preventDefault(); btn.classList.add('dragover'); });
+        btn.addEventListener('dragleave', e => { e.preventDefault(); btn.classList.remove('dragover'); });
+        btn.addEventListener('drop', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            btn.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (!file.type.startsWith('image/')) return;
+                
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const b64 = ev.target.result;
+                    img.src = b64;
+                    img.style.display = 'block';
+                    if (fallbackIcon) fallbackIcon.style.display = 'none';
+                    localStorage.setItem(storageKey, b64);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    setupTabDrop('tab-btn-input', 'tab-img-input', 'custom_tab_icon_input');
+    setupTabDrop('tab-btn-calendar', 'tab-img-calendar', 'custom_tab_icon_calendar');
+    setupTabDrop('tab-btn-records', 'tab-img-records', 'custom_tab_icon_records');
+    setupTabDrop('tab-btn-favorites', 'tab-img-favorites', 'custom_tab_icon_favorites');
+
+    // ===== アコーディオン (モーダル内で使用) =====
+    function toggleAccordion(itemEl) { itemEl.classList.toggle('open'); }
+
+    // ===== グローバル records データ =====
+    let allRecords = [];
+    let calendarEntries = [];
+    const CALENDAR_STORAGE_KEY = 'manga_calendar_entries_v1';
+    const recordsFilterState = { query: '' };
+    const calendarState = {
+        currentMonth: (() => {
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), 1);
+        })(),
+        selectedDate: '',
+        isEntryPopoverOpen: false,
+        dragEntryId: '',
+        suppressNextSelection: false,
+        scrollY: 0,
+        editingEntryId: ''
+    };
+    let appHistoryDepth = 0;
+    let isApplyingHistoryState = false;
+    let currentModalState = { type: '', title: '', date: '' };
+    let currentLightboxState = { src: '', alt: '' };
+
+    function pad2(num) {
+        return String(num).padStart(2, '0');
+    }
+
+    function getTodayIso() {
+        const now = new Date();
+        return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+    }
+
+    function formatMonthLabel(dateObj) {
+        return `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月`;
+    }
+
+    function formatSelectedDateLabel(isoDate) {
+        if (!isoDate) return '日付を選ぶとその日の記録が表示されます';
+        const [year, month, day] = isoDate.split('-');
+        return `${year}年${Number(month)}月${Number(day)}日`;
+    }
+
+    function getCurrentMonthStateValue() {
+        return `${calendarState.currentMonth.getFullYear()}-${pad2(calendarState.currentMonth.getMonth() + 1)}-01`;
+    }
+
+    function applyCurrentMonthStateValue(value) {
+        if (!value || typeof value !== 'string') return;
+        const [year, month] = value.split('-');
+        if (!year || !month) return;
+        calendarState.currentMonth = new Date(Number(year), Number(month) - 1, 1);
+    }
+
+    function getRecordIndexByIdentity(title, date) {
+        return allRecords.findIndex((record) => record.title === title && record.date === date);
+    }
+
+    function buildHistoryState() {
+        return {
+            __appHistory: true,
+            tab: getActiveTabId(),
+            calendarMonth: getCurrentMonthStateValue(),
+            calendarSelectedDate: calendarState.selectedDate || '',
+            calendarPopoverOpen: calendarState.isEntryPopoverOpen,
+            calendarEditingEntryId: calendarState.editingEntryId || '',
+            modalType: currentModalState.type || '',
+            modalTitle: currentModalState.title || '',
+            modalDate: currentModalState.date || '',
+            lightboxSrc: currentLightboxState.src || '',
+            lightboxAlt: currentLightboxState.alt || ''
+        };
+    }
+
+    function areHistoryStatesEqual(a, b) {
+        if (!a || !b) return false;
+        return (
+            a.tab === b.tab &&
+            a.calendarMonth === b.calendarMonth &&
+            a.calendarSelectedDate === b.calendarSelectedDate &&
+            Boolean(a.calendarPopoverOpen) === Boolean(b.calendarPopoverOpen) &&
+            a.calendarEditingEntryId === b.calendarEditingEntryId &&
+            a.modalType === b.modalType &&
+            a.modalTitle === b.modalTitle &&
+            a.modalDate === b.modalDate &&
+            a.lightboxSrc === b.lightboxSrc &&
+            a.lightboxAlt === b.lightboxAlt
+        );
+    }
+
+    function replaceCurrentHistoryState() {
+        history.replaceState(buildHistoryState(), '');
+    }
+
+    function pushCurrentHistoryState() {
+        if (isApplyingHistoryState) return;
+        const nextState = buildHistoryState();
+        const currentState = history.state;
+        if (currentState?.__appHistory && areHistoryStatesEqual(currentState, nextState)) return;
+        history.pushState(nextState, '');
+        appHistoryDepth += 1;
+    }
+
+    function navigateBackWithinApp(fallback) {
+        if (!isApplyingHistoryState && appHistoryDepth > 0) {
+            history.back();
+            return true;
+        }
+        if (typeof fallback === 'function') fallback();
+        return false;
+    }
+
+    function closeCalendarEntryPopoverDirect() {
+        calendarState.isEntryPopoverOpen = false;
+        calendarState.editingEntryId = '';
+        unlockCalendarBodyScroll();
+        renderCalendarView();
+    }
+
+    function closeModalDirect() {
+        closeImageLightboxDirect();
+        currentModalState = { type: '', title: '', date: '' };
+        document.getElementById('modal-overlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function openModalEditFromDetail(idx) {
+        closeModalDirect();
+        openModalEdit(idx);
+    }
+
+    function closeImageLightboxDirect() {
+        const overlay = document.getElementById('image-lightbox');
+        const image = document.getElementById('image-lightbox-img');
+        if (!overlay || !image) return;
+        currentLightboxState = { src: '', alt: '' };
+        overlay.classList.remove('active');
+        image.src = '';
+        image.alt = '拡大画像';
+    }
+
+    async function ensureAllRecordsLoaded() {
+        if (!allRecords.length) {
+            await fetchAllRecords();
+        }
+    }
+
+    function normalizeSearchText(text) {
+        return (text || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[\u30a1-\u30f6]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0x60))
+            .replace(/\s+/g, '');
+    }
+
+    function titleStartsWithQuery(title, query, titleReading = '') {
+        const rawTitle = (title || '').trim().toLowerCase();
+        const rawReading = (titleReading || '').trim().toLowerCase();
+        const rawQuery = (query || '').trim().toLowerCase();
+        const kanaTitle = normalizeSearchText(title);
+        const kanaReading = normalizeSearchText(titleReading);
+        const kanaQuery = normalizeSearchText(query);
+        if (!rawQuery) return true;
+        return (
+            rawTitle.startsWith(rawQuery) ||
+            rawReading.startsWith(rawQuery) ||
+            (kanaQuery && (kanaTitle.startsWith(kanaQuery) || kanaReading.startsWith(kanaQuery)))
+        );
+    }
+
+    function loadLegacyCalendarEntries() {
+        try {
+            const raw = localStorage.getItem(CALENDAR_STORAGE_KEY);
+            const entries = raw ? JSON.parse(raw) : [];
+            return Array.isArray(entries) ? entries : [];
+        } catch (e) {
+            console.error('failed to load legacy calendar entries', e);
+            return [];
+        }
+    }
+
+    function cacheCalendarEntriesLocally(entries) {
+        localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function normalizeCalendarEntryForMerge(entry) {
+        return {
+            id: String(entry?.id || '').trim(),
+            date: String(entry?.date || '').trim(),
+            title: String(entry?.title || '').trim(),
+            volumeStart: String(entry?.volumeStart || '').trim(),
+            volumeEnd: String(entry?.volumeEnd || '').trim()
+        };
+    }
+
+    function mergeCalendarEntries(serverEntries, legacyEntries) {
+        const merged = [];
+        const seen = new Set();
+
+        [...serverEntries, ...legacyEntries].forEach((entry) => {
+            const normalized = normalizeCalendarEntryForMerge(entry);
+            if (!normalized.date || !normalized.title) return;
+            const dedupeKey = normalized.id || [
+                normalized.date,
+                normalized.title,
+                normalized.volumeStart,
+                normalized.volumeEnd
+            ].join('::');
+            if (seen.has(dedupeKey)) return;
+            seen.add(dedupeKey);
+            if (!normalized.id) {
+                normalized.id = `${Date.now()}-${merged.length}`;
+            }
+            merged.push(normalized);
+        });
+
+        return merged;
+    }
+
+    async function saveCalendarEntriesToServer(entries = calendarEntries) {
+        const response = await fetch('/api/calendar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entries })
+        });
+        if (!response.ok) throw new Error('カレンダーの保存に失敗しました。');
+
+        const result = await response.json().catch(() => ({}));
+        calendarEntries = Array.isArray(result.entries) ? result.entries : [];
+        cacheCalendarEntriesLocally(calendarEntries);
+        return calendarEntries;
+    }
+
+    async function loadCalendarEntries() {
+        const response = await fetch('/api/calendar');
+        if (!response.ok) throw new Error('カレンダーの読み込みに失敗しました。');
+
+        const serverEntries = await response.json().catch(() => []);
+        const legacyEntries = loadLegacyCalendarEntries();
+        const mergedEntries = mergeCalendarEntries(
+            Array.isArray(serverEntries) ? serverEntries : [],
+            legacyEntries
+        );
+
+        if (mergedEntries.length > 0) {
+            const shouldSyncMergedEntries = mergedEntries.length !== (Array.isArray(serverEntries) ? serverEntries.length : 0);
+            if (shouldSyncMergedEntries) {
+                await saveCalendarEntriesToServer(mergedEntries);
+                return calendarEntries;
+            }
+            calendarEntries = mergedEntries;
+            cacheCalendarEntriesLocally(calendarEntries);
+            return calendarEntries;
+        }
+
+        calendarEntries = [];
+        cacheCalendarEntriesLocally(calendarEntries);
+        return calendarEntries;
+    }
+
+    function formatVolumeRange(entry) {
+        const start = (entry.volumeStart || '').trim();
+        const end = (entry.volumeEnd || '').trim();
+        if (start && end && start === end) return `${start}巻`;
+        if (start && end) return `${start}巻 〜 ${end}巻`;
+        if (start) return `${start}巻`;
+        if (end) return `${end}巻`;
+        return '巻数未入力';
+    }
+
+    function resetCalendarForm() {
+        const titleInput = document.getElementById('calendar-entry-title');
+        const startInput = document.getElementById('calendar-entry-volume-start');
+        const endInput = document.getElementById('calendar-entry-volume-end');
+        if (titleInput) titleInput.value = '';
+        if (startInput) startInput.value = '';
+        if (endInput) endInput.value = '';
+        hideCalendarTitleSuggestions();
+    }
+
+    function getCalendarTitleSuggestionPool() {
+        const uniqueTitles = new Map();
+
+        allRecords.forEach((record) => {
+            const title = (record.title || '').trim();
+            if (!title || uniqueTitles.has(title)) return;
+            uniqueTitles.set(title, {
+                title,
+                reading: record.title_reading || ''
+            });
+        });
+
+        calendarEntries.forEach((entry) => {
+            const title = (entry.title || '').trim();
+            if (!title || uniqueTitles.has(title)) return;
+            uniqueTitles.set(title, {
+                title,
+                reading: ''
+            });
+        });
+
+        return Array.from(uniqueTitles.values());
+    }
+
+    function getCalendarTitleSuggestions(query) {
+        if (!query) return [];
+        return getCalendarTitleSuggestionPool()
+            .filter((item) => titleStartsWithQuery(item.title, query, item.reading))
+            .slice(0, 8);
+    }
+
+    function hideCalendarTitleSuggestions() {
+        const suggestions = document.getElementById('calendar-title-suggestions');
+        if (!suggestions) return;
+        suggestions.hidden = true;
+        suggestions.innerHTML = '';
+    }
+
+    function renderCalendarTitleSuggestions(query) {
+        const suggestions = document.getElementById('calendar-title-suggestions');
+        if (!suggestions) return;
+
+        const normalizedQuery = (query || '').trim();
+        if (!normalizedQuery) {
+            hideCalendarTitleSuggestions();
+            return;
+        }
+
+        const matchedTitles = getCalendarTitleSuggestions(normalizedQuery);
+        if (matchedTitles.length === 0) {
+            hideCalendarTitleSuggestions();
+            return;
+        }
+
+        suggestions.hidden = false;
+        suggestions.innerHTML = matchedTitles.map((item) => `
+            <button type="button" class="calendar-title-suggestion" onclick="selectCalendarTitleSuggestion('${escapeAttr(item.title)}')">
+                ${escapeHTML(item.title)}
+            </button>
+        `).join('');
+    }
+
+    function handleCalendarTitleInput() {
+        const titleInput = document.getElementById('calendar-entry-title');
+        renderCalendarTitleSuggestions(titleInput?.value || '');
+    }
+
+    function selectCalendarTitleSuggestion(title) {
+        const titleInput = document.getElementById('calendar-entry-title');
+        if (!titleInput) return;
+        titleInput.value = title;
+        hideCalendarTitleSuggestions();
+        try {
+            titleInput.focus({ preventScroll: true });
+        } catch (e) {
+            titleInput.focus();
+        }
+    }
+
+    function isMobileLikeLayout() {
+        return window.matchMedia('(max-width: 820px), (hover: none) and (pointer: coarse)').matches;
+    }
+
+    function focusCalendarTitleInput() {
+        if (isMobileLikeLayout()) return;
+        const titleInput = document.getElementById('calendar-entry-title');
+        if (!titleInput) return;
+        try {
+            titleInput.focus({ preventScroll: true });
+        } catch (e) {
+            titleInput.focus();
+        }
+    }
+
+    function lockCalendarBodyScroll() {
+        if (document.body.dataset.calendarScrollLock === 'true') return;
+        calendarState.scrollY = window.scrollY || window.pageYOffset || 0;
+        if (isMobileLikeLayout()) {
+            document.body.style.overflow = 'hidden';
+            document.body.dataset.calendarScrollMode = 'overflow';
+            document.body.dataset.calendarScrollLock = 'true';
+            return;
+        }
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${calendarState.scrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+        document.body.dataset.calendarScrollMode = 'fixed';
+        document.body.dataset.calendarScrollLock = 'true';
+    }
+
+    function unlockCalendarBodyScroll() {
+        if (document.body.dataset.calendarScrollLock !== 'true') return;
+        const scrollY = calendarState.scrollY || 0;
+        const scrollMode = document.body.dataset.calendarScrollMode || '';
+        if (scrollMode === 'overflow') {
+            document.body.style.overflow = '';
+            delete document.body.dataset.calendarScrollMode;
+            delete document.body.dataset.calendarScrollLock;
+            window.scrollTo(0, scrollY);
+            return;
+        }
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        delete document.body.dataset.calendarScrollMode;
+        delete document.body.dataset.calendarScrollLock;
+        window.scrollTo(0, scrollY);
+    }
+
+    async function saveCalendarEntry() {
+        const titleInput = document.getElementById('calendar-entry-title');
+        const startInput = document.getElementById('calendar-entry-volume-start');
+        const endInput = document.getElementById('calendar-entry-volume-end');
+        if (!titleInput) return;
+
+        const entryDate = calendarState.selectedDate;
+        const title = titleInput.value.trim();
+        const volumeStart = startInput?.value.trim() || '';
+        const volumeEnd = endInput?.value.trim() || '';
+
+        if (!entryDate || !title) {
+            alert('カレンダーの日付を選んで、漫画タイトルを入力してください。');
+            return;
+        }
+
+        const previousEntries = JSON.parse(JSON.stringify(calendarEntries));
+        const editingIndex = calendarEntries.findIndex((entry) => entry.id === calendarState.editingEntryId);
+        if (editingIndex >= 0) {
+            calendarEntries[editingIndex] = {
+                ...calendarEntries[editingIndex],
+                date: entryDate,
+                title,
+                volumeStart,
+                volumeEnd
+            };
+        } else {
+            calendarEntries.push({
+                id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                date: entryDate,
+                title,
+                volumeStart,
+                volumeEnd
+            });
+        }
+        try {
+            await saveCalendarEntriesToServer();
+        } catch (e) {
+            calendarEntries = previousEntries;
+            console.error(e);
+            alert(e.message || 'カレンダーの保存に失敗しました。');
+            return;
+        }
+
+        const [year, month] = entryDate.split('-');
+        calendarState.currentMonth = new Date(Number(year), Number(month) - 1, 1);
+        calendarState.selectedDate = entryDate;
+        calendarState.editingEntryId = '';
+        resetCalendarForm();
+        renderCalendarView();
+        const nextTitleInput = document.getElementById('calendar-entry-title');
+        if (nextTitleInput) nextTitleInput.focus();
+    }
+
+    async function deleteCalendarEntry(entryId) {
+        const previousEntries = JSON.parse(JSON.stringify(calendarEntries));
+        calendarEntries = calendarEntries.filter((entry) => entry.id !== entryId);
+        if (calendarState.editingEntryId === entryId) {
+            calendarState.editingEntryId = '';
+        }
+        try {
+            await saveCalendarEntriesToServer();
+        } catch (e) {
+            calendarEntries = previousEntries;
+            console.error(e);
+            alert(e.message || 'カレンダーの削除に失敗しました。');
+            return;
+        }
+        renderCalendarView();
+    }
+
+    function startCalendarEntryEdit(entryId, options = {}) {
+        const { fromHistory = false } = options;
+        const entry = calendarEntries.find((item) => item.id === entryId);
+        if (!entry) return;
+        calendarState.selectedDate = entry.date;
+        calendarState.editingEntryId = entryId;
+        renderCalendarView();
+        focusCalendarTitleInput();
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    function cancelCalendarEntryEdit(fromHistory = false) {
+        if (!fromHistory && navigateBackWithinApp()) return;
+        calendarState.editingEntryId = '';
+        renderCalendarView();
+    }
+
+    function closeCalendarEntryPopover(fromHistory = false) {
+        if (!fromHistory && navigateBackWithinApp()) return;
+        closeCalendarEntryPopoverDirect();
+    }
+
+    function clearCalendarDropTargets() {
+        document.querySelectorAll('.calendar-cell.is-drop-target').forEach((element) => {
+            element.classList.remove('is-drop-target');
+        });
+    }
+
+    function startCalendarEntryDrag(event, entryId) {
+        calendarState.dragEntryId = entryId;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', entryId);
+        }
+    }
+
+    function endCalendarEntryDrag() {
+        calendarState.dragEntryId = '';
+        clearCalendarDropTargets();
+    }
+
+    function handleCalendarCellDragOver(event) {
+        const dragTypes = Array.from(event.dataTransfer?.types || []);
+        if (!calendarState.dragEntryId && !dragTypes.includes('text/plain')) return;
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        event.currentTarget.classList.add('is-drop-target');
+    }
+
+    function handleCalendarCellDragLeave(event) {
+        event.currentTarget.classList.remove('is-drop-target');
+    }
+
+    async function moveCalendarEntryToDate(entryId, targetDate) {
+        const entry = calendarEntries.find((item) => item.id === entryId);
+        if (!entry || !targetDate || entry.date === targetDate) return false;
+        const previousEntries = JSON.parse(JSON.stringify(calendarEntries));
+        entry.date = targetDate;
+        try {
+            await saveCalendarEntriesToServer();
+        } catch (e) {
+            calendarEntries = previousEntries;
+            console.error(e);
+            alert(e.message || 'カレンダー移動の保存に失敗しました。');
+            return false;
+        }
+
+        const [year, month] = targetDate.split('-');
+        calendarState.currentMonth = new Date(Number(year), Number(month) - 1, 1);
+        calendarState.selectedDate = targetDate;
+        calendarState.isEntryPopoverOpen = false;
+        calendarState.editingEntryId = '';
+        unlockCalendarBodyScroll();
+        return true;
+    }
+
+    async function handleCalendarEntryDrop(event, targetDate) {
+        event.preventDefault();
+        event.stopPropagation();
+        const droppedEntryId = event.dataTransfer?.getData('text/plain') || calendarState.dragEntryId;
+        clearCalendarDropTargets();
+        const moved = await moveCalendarEntryToDate(droppedEntryId, targetDate);
+        calendarState.suppressNextSelection = moved;
+        endCalendarEntryDrag();
+        if (moved) renderCalendarView();
+    }
+
+    async function fetchAllRecords() {
+        const response = await fetch('/api/records');
+        if (!response.ok) throw new Error('サーバー通信エラー');
+        allRecords = await response.json();
+        return allRecords;
+    }
+
+    function getFilteredRecordEntries() {
+        const query = recordsFilterState.query || '';
+        return allRecords
+            .map((record, idx) => ({ record, idx }))
+            .filter(({ record }) => titleStartsWithQuery(record.title, query, record.title_reading || ''));
+    }
+
+    function attachPressableCardBehavior(card, onActivate) {
+        if (!card) return;
+        let releaseTimer = 0;
+
+        const isTouchLikeDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+        const clearReleaseTimer = () => {
+            if (!releaseTimer) return;
+            window.clearTimeout(releaseTimer);
+            releaseTimer = 0;
+        };
+
+        const setPressVector = (event) => {
+            const rect = card.getBoundingClientRect();
+            const relativeX = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+            const relativeY = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+            const xPercent = rect.width ? (relativeX / rect.width) * 100 : 50;
+            const yPercent = rect.height ? (relativeY / rect.height) * 100 : 50;
+            const shiftX = ((xPercent - 50) / 50) * 5;
+            const shiftY = ((yPercent - 50) / 50) * 5;
+
+            card.style.setProperty('--press-x', `${xPercent.toFixed(2)}%`);
+            card.style.setProperty('--press-y', `${yPercent.toFixed(2)}%`);
+            card.style.setProperty('--press-shift-x', `${shiftX.toFixed(2)}px`);
+            card.style.setProperty('--press-shift-y', `${shiftY.toFixed(2)}px`);
+        };
+
+        const resetPressVector = () => {
+            card.style.setProperty('--press-x', '50%');
+            card.style.setProperty('--press-y', '50%');
+            card.style.setProperty('--press-shift-x', '0px');
+            card.style.setProperty('--press-shift-y', '0px');
+        };
+
+        const clearPress = () => {
+            card.classList.remove('is-pressing');
+        };
+
+        const finishInteraction = () => {
+            clearPress();
+            card.classList.remove('is-pointer-over');
+            card.classList.remove('is-releasing');
+            resetPressVector();
+        };
+
+        card.addEventListener('pointerenter', (event) => {
+            if (event.target.closest('button')) return;
+            card.classList.add('is-pointer-over');
+            setPressVector(event);
+        });
+        card.addEventListener('pointermove', (event) => {
+            if (!card.classList.contains('is-pointer-over') && !card.classList.contains('is-pressing')) {
+                return;
+            }
+            setPressVector(event);
+        });
+        card.addEventListener('pointerdown', (event) => {
+            if (event.target.closest('button')) return;
+            clearReleaseTimer();
+            card.classList.remove('is-releasing');
+            card.classList.add('is-pointer-over');
+            setPressVector(event);
+            card.classList.add('is-pressing');
+        });
+        card.addEventListener('pointerup', () => {
+            clearPress();
+            if (isTouchLikeDevice()) {
+                card.classList.add('is-releasing');
+            } else {
+                card.classList.remove('is-releasing');
+            }
+        });
+        card.addEventListener('pointercancel', () => {
+            clearReleaseTimer();
+            finishInteraction();
+        });
+        card.addEventListener('pointerleave', () => {
+            if (card.classList.contains('is-pressing')) return;
+            clearReleaseTimer();
+            finishInteraction();
+        });
+        card.addEventListener('click', (event) => {
+            if (event.target.closest('button')) return;
+            clearReleaseTimer();
+
+            if (isTouchLikeDevice()) {
+                event.preventDefault();
+                clearPress();
+                card.classList.add('is-releasing');
+                releaseTimer = window.setTimeout(() => {
+                    finishInteraction();
+                    onActivate();
+                }, 95);
+                return;
+            }
+
+            finishInteraction();
+            onActivate();
+        });
+
+        resetPressVector();
+    }
+
+    function renderRecordsGrid(entries) {
+        const container = document.getElementById('records-container');
+        const status = document.getElementById('records-filter-status');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (status) {
+            status.textContent = recordsFilterState.query
+                ? `${entries.length}件ヒットしました / 先頭一致: 「${recordsFilterState.query}」`
+                : `${allRecords.length}件の記録があります`;
+        }
+
+        if (allRecords.length === 0) {
+            container.innerHTML = '<div class="panel empty-message" style="grid-column:1/-1;">まだ記録がありません。<br>感想を記録タブから入力してみましょう！</div>';
+            return;
+        }
+
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="panel empty-message" style="grid-column:1/-1;">条件に合う記録が見つかりませんでした。<br>漫画タイトルの先頭文字を変えてみてください。</div>';
+            return;
+        }
+
+        entries.forEach(({ record, idx }) => {
+            const card = document.createElement('div');
+            card.className = 'manga-card';
+
+            const starIcon = record.favorite ? '★' : '☆';
+            const starClass = record.favorite ? 'star-btn favorited' : 'star-btn';
+
+            card.innerHTML = `
+                <div class="manga-card-title">${escapeHTML(record.title)}</div>
+                <div class="manga-card-actions">
+                    <button class="${starClass}" onclick="event.stopPropagation(); toggleFavorite('${escapeAttr(record.title)}', '${escapeAttr(record.date)}', this)">${starIcon}</button>
+                    <button class="edit-btn" onclick="event.stopPropagation(); openModalEdit(${idx})">✏️</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteRecord('${escapeAttr(record.title)}', '${escapeAttr(record.date)}')">🗑️</button>
+                </div>
+            `;
+            attachPressableCardBehavior(card, () => openModal(idx));
+            container.appendChild(card);
+        });
+    }
+
+    function syncRecordsFiltersFromInputs() {
+        recordsFilterState.query = document.getElementById('records-search-input')?.value || '';
+    }
+
+    function handleRecordsFilterChange() {
+        syncRecordsFiltersFromInputs();
+        renderRecordsGrid(getFilteredRecordEntries());
+    }
+
+    function resetRecordsFilters() {
+        const searchInput = document.getElementById('records-search-input');
+        if (searchInput) searchInput.value = '';
+        recordsFilterState.query = '';
+        renderRecordsGrid(getFilteredRecordEntries());
+    }
+
+    function buildCalendarDataMap() {
+        const map = new Map();
+        calendarEntries.forEach((entry) => {
+            if (!entry.date) return;
+            if (!map.has(entry.date)) map.set(entry.date, []);
+            map.get(entry.date).push(entry);
+        });
+        return map;
+    }
+
+    function ensureCalendarSelection(recordsByDate) {
+        const monthPrefix = `${calendarState.currentMonth.getFullYear()}-${pad2(calendarState.currentMonth.getMonth() + 1)}`;
+        const currentSelected = calendarState.selectedDate || '';
+        if (currentSelected.startsWith(monthPrefix)) return;
+
+        const todayIso = getTodayIso();
+        if (todayIso.startsWith(monthPrefix)) {
+            calendarState.selectedDate = todayIso;
+            return;
+        }
+
+        calendarState.selectedDate = `${monthPrefix}-01`;
+    }
+
+    function renderCalendarView() {
+        const root = document.getElementById('calendar-root');
+        const popoverRoot = document.getElementById('calendar-popover-root');
+        const monthLabel = document.getElementById('calendar-month-label');
+        if (!root || !popoverRoot || !monthLabel) return;
+
+        monthLabel.textContent = formatMonthLabel(calendarState.currentMonth);
+
+        const recordsByDate = buildCalendarDataMap();
+        ensureCalendarSelection(recordsByDate);
+
+        const year = calendarState.currentMonth.getFullYear();
+        const month = calendarState.currentMonth.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const startWeekday = firstDay.getDay();
+        const todayIso = getTodayIso();
+
+        const weekdayHtml = [
+            { label: '日', className: 'is-sunday' },
+            { label: '月', className: '' },
+            { label: '火', className: '' },
+            { label: '水', className: '' },
+            { label: '木', className: '' },
+            { label: '金', className: '' },
+            { label: '土', className: 'is-saturday' }
+        ]
+            .map(({ label, className }) => `<div class="calendar-weekday ${className}">${label}</div>`)
+            .join('');
+
+        let cellHtml = '';
+        for (let i = 0; i < startWeekday; i += 1) {
+            cellHtml += '<div class="calendar-cell is-outside"></div>';
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const isoDate = `${year}-${pad2(month + 1)}-${pad2(day)}`;
+            const dayEntries = recordsByDate.get(isoDate) || [];
+            const classes = ['calendar-cell'];
+            const weekdayIndex = new Date(year, month, day).getDay();
+            if (weekdayIndex === 0) classes.push('is-sunday');
+            if (weekdayIndex === 6) classes.push('is-saturday');
+            if (dayEntries.length > 0) classes.push('has-records');
+            if (calendarState.selectedDate === isoDate) classes.push('is-selected');
+            if (todayIso === isoDate) classes.push('is-today');
+
+            const entryHtml = dayEntries.length > 0
+                ? `<div class="calendar-cell-entries">
+                    ${dayEntries.map((entry) => `
+                        <div
+                            class="calendar-cell-entry"
+                            draggable="true"
+                            ondragstart="startCalendarEntryDrag(event, '${entry.id}')"
+                            ondragend="endCalendarEntryDrag()"
+                        >
+                            <div class="calendar-cell-entry-title">${escapeHTML(entry.title)}</div>
+                            <div class="calendar-cell-entry-volume">${escapeHTML(formatVolumeRange(entry))}</div>
+                        </div>
+                    `).join('')}
+                </div>`
+                : '<div class="calendar-cell-empty">クリックして記録</div>';
+
+            cellHtml += `
+                <button
+                    type="button"
+                    class="${classes.join(' ')}"
+                    onclick="selectCalendarDate('${isoDate}')"
+                    ondragover="handleCalendarCellDragOver(event)"
+                    ondragleave="handleCalendarCellDragLeave(event)"
+                    ondrop="handleCalendarEntryDrop(event, '${isoDate}')"
+                >
+                    <div class="calendar-cell-header">
+                        <div class="calendar-day-number">${day}</div>
+                        ${dayEntries.length > 0 ? `<div class="calendar-count-badge">${dayEntries.length}冊</div>` : ''}
+                    </div>
+                    ${entryHtml}
+                </button>
+            `;
+        }
+
+        const trailingOutsideCells = (7 - ((startWeekday + daysInMonth) % 7)) % 7;
+        for (let i = 0; i < trailingOutsideCells; i += 1) {
+            cellHtml += '<div class="calendar-cell is-outside"></div>';
+        }
+
+        const selectedEntries = calendarState.selectedDate ? (recordsByDate.get(calendarState.selectedDate) || []) : [];
+        const editingEntry = calendarEntries.find((entry) => entry.id === calendarState.editingEntryId) || null;
+        const popoverHtml = calendarState.isEntryPopoverOpen
+            ? `
+                <div class="calendar-entry-overlay" onclick="if(event.target===this) closeCalendarEntryPopover()">
+                    <div class="calendar-entry-panel">
+                        <div class="calendar-entry-header">
+                            <div>
+                                <h3>${formatSelectedDateLabel(calendarState.selectedDate)}</h3>
+                                <div class="calendar-selected-note">${editingEntry ? '登録内容を修正できます。保存するとこの記録が更新されます。' : 'この日付に複数の漫画を追加できます。'}</div>
+                            </div>
+                            <button type="button" class="calendar-entry-close" onclick="closeCalendarEntryPopover()">✕</button>
+                        </div>
+                        <div class="calendar-form">
+                            <div class="calendar-title-field">
+                                <input type="text" id="calendar-entry-title" placeholder="漫画タイトル" value="${escapeAttr(editingEntry?.title || '')}" autocomplete="off" oninput="handleCalendarTitleInput()" onfocus="handleCalendarTitleInput()">
+                                <div id="calendar-title-suggestions" class="calendar-title-suggestions" hidden></div>
+                            </div>
+                            <input type="text" id="calendar-entry-volume-start" placeholder="巻数" value="${escapeAttr(editingEntry?.volumeStart || '')}" onfocus="hideCalendarTitleSuggestions()">
+                            <input type="text" id="calendar-entry-volume-end" placeholder="終了巻（任意）" value="${escapeAttr(editingEntry?.volumeEnd || '')}" onfocus="hideCalendarTitleSuggestions()">
+                            <button type="button" class="calendar-form-submit" onclick="saveCalendarEntry()">${editingEntry ? '修正を保存' : '登録する'}</button>
+                            ${editingEntry ? '<button type="button" class="calendar-form-reset" onclick="cancelCalendarEntryEdit()">キャンセル</button>' : ''}
+                        </div>
+                        <div class="calendar-form-note">${editingEntry ? '例: 1巻だけなら左だけ入力、複数巻なら右にも入力して「修正を保存」を押してください。' : '例: 12巻だけなら左だけ入力 / 12巻〜14巻なら右にも入力'}</div>
+                        ${selectedEntries.length > 0
+                            ? `<div class="calendar-record-list">
+                                ${selectedEntries.map((entry) => `
+                                    <div class="calendar-record-card">
+                                        <div class="calendar-record-title">${escapeHTML(entry.title)}</div>
+                                        <div class="calendar-record-volume">${escapeHTML(formatVolumeRange(entry))}</div>
+                                        <div class="calendar-record-meta">${escapeHTML(entry.date)}</div>
+                                        <div class="calendar-record-actions">
+                                            <button type="button" class="calendar-record-edit" onclick="startCalendarEntryEdit('${entry.id}')">修正</button>
+                                            <button type="button" class="calendar-record-delete" onclick="deleteCalendarEntry('${entry.id}')">削除</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>`
+                            : '<div class="empty-message" style="padding:20px 0;">まだ登録がありません。上の入力欄から追加できます。</div>'}
+                    </div>
+                </div>
+            `
+            : '';
+
+        root.innerHTML = `
+            <div class="calendar-stage">
+                <div class="calendar-grid">
+                    ${weekdayHtml}
+                    ${cellHtml}
+                </div>
+            </div>
+        `;
+        popoverRoot.innerHTML = popoverHtml;
+    }
+
+    function selectCalendarDate(isoDate, options = {}) {
+        const { fromHistory = false } = options;
+        if (calendarState.suppressNextSelection) {
+            calendarState.suppressNextSelection = false;
+            return;
+        }
+        calendarState.selectedDate = isoDate;
+        calendarState.isEntryPopoverOpen = true;
+        calendarState.editingEntryId = '';
+        lockCalendarBodyScroll();
+        renderCalendarView();
+        focusCalendarTitleInput();
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    function changeCalendarMonth(offset, options = {}) {
+        const { fromHistory = false } = options;
+        calendarState.currentMonth = new Date(calendarState.currentMonth.getFullYear(), calendarState.currentMonth.getMonth() + offset, 1);
+        calendarState.selectedDate = '';
+        calendarState.isEntryPopoverOpen = false;
+        calendarState.editingEntryId = '';
+        unlockCalendarBodyScroll();
+        renderCalendarView();
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    function jumpCalendarToToday(options = {}) {
+        const { fromHistory = false } = options;
+        const todayIso = getTodayIso();
+        const [year, month] = todayIso.split('-');
+        calendarState.currentMonth = new Date(Number(year), Number(month) - 1, 1);
+        calendarState.selectedDate = todayIso;
+        calendarState.isEntryPopoverOpen = false;
+        calendarState.editingEntryId = '';
+        unlockCalendarBodyScroll();
+        renderCalendarView();
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    // ===== 記録読み込み（グリッド） =====
+    async function loadRecords() {
+        const container = document.getElementById('records-container');
+        try {
+            await fetchAllRecords();
+            renderRecordsGrid(getFilteredRecordEntries());
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div class="panel" style="grid-column:1/-1;color:red;text-align:center;font-weight:bold;font-size:1.2rem;padding:32px;">通信エラー</div>';
+        }
+    }
+
+    function getActiveTabId() {
+        return document.querySelector('.tab-content.active')?.id?.replace('tab-', '') || 'records';
+    }
+
+    async function refreshVisibleRecordViews() {
+        const activeTabId = getActiveTabId();
+        if (activeTabId === 'favorites') {
+            await loadFavorites();
+            return;
+        }
+        await loadRecords();
+    }
+
+    async function deleteRecord(title, date) {
+        if (!title || !date) return;
+        const shouldDelete = window.confirm(`「${title}」の記録を削除しますか？`);
+        if (!shouldDelete) return;
+
+        try {
+            const resp = await fetch('/api/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, date })
+            });
+            const result = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                alert(result.error || '削除に失敗しました。');
+                return;
+            }
+
+            closeModal();
+            await refreshVisibleRecordViews();
+        } catch (e) {
+            console.error(e);
+            alert('通信エラーで削除できませんでした。');
+        }
+    }
+
+    function deleteRecordByIndex(idx) {
+        const record = allRecords[idx];
+        if (!record) return;
+        deleteRecord(record.title, record.date);
+    }
+
+    function openImageLightbox(src, alt = '', options = {}) {
+        const { fromHistory = false } = options;
+        const overlay = document.getElementById('image-lightbox');
+        const image = document.getElementById('image-lightbox-img');
+        if (!overlay || !image || !src) return;
+        currentLightboxState = { src, alt };
+        image.src = src;
+        image.alt = alt || '拡大画像';
+        overlay.classList.add('active');
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    function closeImageLightbox(fromHistory = false) {
+        if (!fromHistory && navigateBackWithinApp()) return;
+        closeImageLightboxDirect();
+    }
+
+    async function loadCalendarView() {
+        const root = document.getElementById('calendar-root');
+        try {
+            if (!allRecords.length) {
+                try {
+                    await fetchAllRecords();
+                } catch (e) {
+                    console.warn('calendar title suggestions unavailable', e);
+                }
+            }
+            await loadCalendarEntries();
+            renderCalendarView();
+        } catch (e) {
+            console.error(e);
+            root.innerHTML = '<div class="panel" style="color:red;text-align:center;font-weight:bold;font-size:1.2rem;padding:32px;">通信エラー</div>';
+        }
+    }
+
+    // ギャラリー部分のHTML生成とイベント付着（部分更新用）
+    function updateGalleryUI(idx) {
+        const record = allRecords[idx];
+        if (!record) return;
+        const leftPanel = document.querySelector('.modal-left');
+        if (!leftPanel) return;
+
+        const gallery = record.gallery || [];
+        let galleryItemsHtml = '';
+        gallery.forEach((imgPath) => {
+            galleryItemsHtml += `
+                <div class="gallery-item" draggable="true" ondragstart="event.dataTransfer.setData('application/x-manga-gallery-image', '${imgPath}')">
+                    <img src="${imgPath}" alt="ギャラリー画像" class="previewable-image" data-preview-src="${escapeAttr(imgPath)}" data-preview-alt="${escapeAttr(record.title)} のギャラリー画像">
+                    <button class="gallery-remove" onclick="event.stopPropagation(); removeGalleryImage(${idx}, '${escapeAttr(imgPath)}')" title="この画像を削除">✕</button>
+                </div>`;
+        });
+
+        const canAdd = gallery.length < 3;
+        const dropzoneHtml = canAdd ? `
+            <div class="gallery-dropzone" id="gallery-dropzone">
+                📷 画像をドラッグ＆ドロップ<br><small>または検索から追加（残り${3 - gallery.length}枚）</small>
+            </div>` : '';
+
+        leftPanel.innerHTML = `
+            <div style="font-weight:900; font-size:1.1rem; color:var(--text-muted); margin-bottom:4px;">📸 ギャラリー <span class="gallery-count">(${gallery.length}/3)</span></div>
+            <div class="gallery-grid">
+                ${galleryItemsHtml || '<div style="color:var(--text-muted); text-align:center; padding:24px; font-size:0.95rem;">まだ画像がありません</div>'}
+            </div>
+            ${dropzoneHtml}
+        `;
+
+        // ドロップゾーンのイベント設定
+        const dz = document.getElementById('gallery-dropzone');
+        if (dz) {
+            dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', (e) => { e.preventDefault(); dz.classList.remove('dragover'); });
+            dz.addEventListener('drop', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                dz.classList.remove('dragover');
+
+                const ddgImageUrl = e.dataTransfer.getData('application/x-ddg-image');
+                if (ddgImageUrl) {
+                    applySearchImage(idx, ddgImageUrl);
+                    return;
+                }
+
+                const mainImagePath = e.dataTransfer.getData('application/x-manga-main-image');
+                if (mainImagePath) {
+                    // 表紙画像をギャラリーに追加
+                    // プロキシを介さずそのままでも良いが、Base64に変換して再保存する
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width; canvas.height = img.height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        addGalleryImage(idx, canvas.toDataURL('image/png'));
+                    };
+                    img.src = mainImagePath;
+                    return;
+                }
+
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (!file.type.startsWith('image/')) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => addGalleryImage(idx, ev.target.result);
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        leftPanel.querySelectorAll('.gallery-item img').forEach((imgEl) => {
+            imgEl.addEventListener('click', (event) => {
+                event.stopPropagation();
+                openImageLightbox(imgEl.dataset.previewSrc || imgEl.getAttribute('src') || '', imgEl.dataset.previewAlt || imgEl.alt || '');
+            });
+        });
+    }
+
+    // ===== モーダル表示（2パネル: 左=ギャラリー, 右=感想） =====
+    function openModal(idx, options = {}) {
+        const { fromHistory = false } = options;
+        const record = allRecords[idx];
+        if (!record) return;
+        const modal = document.getElementById('modal-overlay');
+        const body = document.getElementById('modal-body');
+        currentModalState = { type: 'view', title: record.title, date: record.date };
+
+        // 右パネル（既存コンテンツ）
+        const imgHtml = record.image
+            ? `<img src="${record.image}" class="acc-content-image previewable-image" id="main-image-dropzone" alt="漫画画像" title="ドラッグ＆ドロップで表紙を変更 / 表紙をギャラリーへ / タップで拡大" 
+                draggable="true" ondragstart="event.dataTransfer.setData('application/x-manga-main-image', '${record.image}')"
+                style="cursor:grab; transition:all 0.2s;">`
+            : `<div class="gallery-dropzone" id="main-image-dropzone" style="margin-bottom: 24px; min-height:150px;">ここに表紙画像をドラッグ＆ドロップ</div>`;
+        let quoteHtml = '';
+        if (record.quote) {
+            const formattedQuote = record.quote.split('\n')
+                .map(line => line.trim()).filter(line => line.length > 0)
+                .map(line => { let t = line; if (t.startsWith('「')) t = t.substring(1); if (t.endsWith('」')) t = t.substring(0, t.length - 1); return `「${escapeHTML(t)}」`; })
+                .join('<br>');
+            quoteHtml = `<div class="acc-quote">${formattedQuote}</div>`;
+        }
+                let summaryHtml = '';
+                if (record.summary) {
+                    const items = record.summary
+                        .split('\n')
+                        .map(l => l.trim())
+                        .filter(Boolean)
+                        .map(l => l.replace(/^[-・*]\s*/,''))
+                        .filter(Boolean);
+                    if (items.length > 0) {
+                        summaryHtml = `
+                            <div style="margin-top:16px;">
+                                <div style="font-weight:900; color:var(--primary-hover); margin-bottom:8px;">箇条書きまとめ</div>
+                                <ul style="padding-left:20px; margin:0;">
+                                    ${items.map(i => `<li>${escapeHTML(i)}</li>`).join('')}
+                                </ul>
+                            </div>`;
+                    }
+                }
+
+                const tagHtml = record.tag ? `<div class="acc-tag">#${escapeHTML(record.tag)}</div>` : '';
+
+        body.innerHTML = `
+            <div class="modal-dual">
+                <div class="modal-left"></div>
+                <div class="modal-right">
+                    <div class="modal-title">${escapeHTML(record.title)}</div>
+                    <div class="modal-date">${escapeHTML(record.date)}</div>
+                    ${imgHtml}
+                    ${quoteHtml}
+                    <div class="acc-thoughts">${escapeHTML(record.thoughts).replace(/\n/g, '<br>')}</div>
+                    ${tagHtml}
+                    ${summaryHtml}
+                    <button class="btn-ai-generate" type="button" onclick="generateSummaryForModal(${idx}, this)">
+                        🧠 AIでまとめる
+                    </button>
+                    <div class="modal-action-row" style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+                        <button class="edit-btn" onclick="openModalEditFromDetail(${idx})">✏️ 編集する</button>
+                        <button class="edit-btn" style="background:rgba(16,185,129,0.1); color:var(--primary-color); border-color:rgba(16,185,129,0.2);" onclick="toggleSearchPanel(${idx})">🔍 画像を検索</button>
+                        <button class="delete-btn" onclick="deleteRecordByIndex(${idx})">🗑️ 削除する</button>
+                    </div>
+                    <div id="search-panel-area"></div>
+                </div>
+            </div>
+        `;
+        body.dataset.idx = idx;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // 背景のスクロールをロック
+
+        // ギャラリー部分のレンダリング
+        updateGalleryUI(idx);
+
+        // 右パネルのメイン画像ドロップゾーン（ローカル / ギャラリー / 検索結果）
+        const mz = document.getElementById('main-image-dropzone');
+        if (mz) {
+            if (mz.tagName === 'IMG') {
+                mz.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openImageLightbox(record.image, `${record.title} の表紙画像`);
+                });
+            }
+            mz.addEventListener('dragover', (e) => { e.preventDefault(); mz.style.opacity = '0.5'; mz.style.outline = '4px dashed var(--primary-color)'; });
+            mz.addEventListener('dragleave', (e) => { e.preventDefault(); mz.style.opacity = '1'; mz.style.outline = 'none'; });
+            mz.addEventListener('drop', async (e) => {
+                e.preventDefault(); e.stopPropagation();
+                mz.style.opacity = '1'; mz.style.outline = 'none';
+                
+                // 1. 検索結果からのドラッグ
+                const ddgImageUrl = e.dataTransfer.getData('application/x-ddg-image');
+                if (ddgImageUrl) {
+                    applySearchImage(idx, ddgImageUrl, true); // true = 表紙に適用
+                    return;
+                }
+
+                // 2. ギャラリーからのドラッグ
+                const galleryImagePath = e.dataTransfer.getData('application/x-manga-gallery-image');
+                if (galleryImagePath) {
+                    await setMainImage(idx, { keep_image: galleryImagePath });
+                    return;
+                }
+
+                // 3. ローカルファイル
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (!file.type.startsWith('image/')) return;
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        await setMainImage(idx, { image: ev.target.result });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    // 表紙画像の設定（共通ヘルパー）
+    async function setMainImage(idx, imgData) {
+        const record = allRecords[idx];
+        if (!record) return;
+
+        // Ctrl+Zのために履歴保存
+        imageHistory.push({ idx, prevImage: record.image || '', title: record.title, date: record.date });
+
+        try {
+            const saveResp = await fetch('/api/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orig_title: record.title, orig_date: record.date,
+                    title: record.title, quote: record.quote, thoughts: record.thoughts, summary: record.summary, tag: record.tag,
+                    ...imgData
+                })
+            });
+            if (saveResp.ok) {
+                await loadRecords(); 
+                openModal(idx);
+            } else {
+                imageHistory.pop(); alert('更新失敗');
+            }
+        } catch(err) { imageHistory.pop(); alert('通信エラー'); }
+    }
+
+    // ===== ギャラリー操作 =====
+    async function addGalleryImage(idx, imageB64) {
+        const record = allRecords[idx];
+        if (!record) return;
+        try {
+            const resp = await fetch('/api/gallery-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: record.title, date: record.date, image: imageB64 })
+            });
+            if (resp.ok) {
+                await loadRecords();
+                updateGalleryUI(idx); // 部分更新
+            } else {
+                const err = await resp.json();
+                alert(err.error || 'ギャラリーの追加に失敗しました');
+            }
+        } catch (e) { console.error(e); alert('通信エラー'); }
+    }
+
+    async function removeGalleryImage(idx, imgPath) {
+        const record = allRecords[idx];
+        if (!record) return;
+        try {
+            const resp = await fetch('/api/gallery-remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: record.title, date: record.date, image_path: imgPath })
+            });
+            if (resp.ok) {
+                await loadRecords();
+                updateGalleryUI(idx); // 部分更新
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function openModalEdit(idx, options = {}) {
+        const { fromHistory = false } = options;
+        const record = allRecords[idx];
+        if (!record) return;
+        const modal = document.getElementById('modal-overlay');
+        const body = document.getElementById('modal-body');
+        currentModalState = { type: 'edit', title: record.title, date: record.date };
+
+        let quoteVal = escapeHTML(record.quote || '');
+        let editImageState = record.image || '';
+
+        body.innerHTML = `
+            <div class="modal-title">編集: ${escapeHTML(record.title)}</div>
+            <div class="edit-form" style="overflow-y: auto; max-height: calc(90vh - 120px); padding-right: 8px;">
+                <div class="edit-group">
+                    <label>漫画タイトル</label>
+                    <input type="text" class="edit-title" value="${escapeAttr(record.title)}">
+                </div>
+                <div class="edit-group">
+                    <label>名言・お気に入りセリフ</label>
+                    <textarea class="edit-quote">${quoteVal}</textarea>
+                </div>
+                <div class="edit-group">
+                    <label>感想</label>
+                    <textarea class="edit-thoughts">${escapeHTML(record.thoughts)}</textarea>
+                </div>
+                <div class="edit-group">
+                    <label>感情タグ</label>
+                    <input type="text" class="edit-tag" value="${escapeAttr(record.tag)}">
+                </div>
+                <div class="edit-group">
+                    <label>箇条書きまとめ</label>
+                    <textarea class="edit-summary">${escapeHTML(record.summary || '')}</textarea>
+                </div>
+                <button type="button" class="btn-ai-generate" onclick="generateSummaryInEdit(${idx}, this)">
+                    🧠 AIでまとめる
+                </button>
+                <div class="edit-group">
+                    <label>画像</label>
+                    <div class="edit-image-drop" id="modal-edit-img-drop"
+                         style="${editImageState ? 'background-image:url(' + editImageState + ')' : ''}">
+                        ${editImageState ? '' : '<span>画像をドラッグ＆ドロップ</span>'}
+                    </div>
+                    <div class="edit-image-actions">
+                        <button type="button" class="edit-image-clear" onclick="clearModalEditImage()">画像を削除</button>
+                    </div>
+                </div>
+                <div class="edit-btn-row">
+                    <button class="btn-save-edit" onclick="saveModalEdit(${idx})">保存する</button>
+                    <button class="btn-cancel-edit" onclick="closeModal()">キャンセル</button>
+                </div>
+            </div>
+        `;
+
+        // 画像ドロップ
+        const dropArea = document.getElementById('modal-edit-img-drop');
+        let newImageB64 = '';
+        let keepImage = editImageState;
+        let removeImage = false;
+
+        dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
+        dropArea.addEventListener('dragleave', e => { e.preventDefault(); dropArea.classList.remove('dragover'); });
+        dropArea.addEventListener('drop', e => {
+            e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    newImageB64 = ev.target.result;
+                    dropArea.style.backgroundImage = `url(${newImageB64})`;
+                    dropArea.innerHTML = '';
+                    removeImage = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        window._modalEditState = { newImageB64: () => newImageB64, keepImage, removeImage: () => removeImage };
+        window._clearModalEditImage = () => {
+            newImageB64 = '';
+            keepImage = '';
+            removeImage = true;
+            dropArea.style.backgroundImage = 'none';
+            dropArea.innerHTML = '<span>画像をドラッグ＆ドロップ</span>';
+        };
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // 背景のスクロールをロック
+        if (!fromHistory) pushCurrentHistoryState();
+    }
+
+    function clearModalEditImage() { window._clearModalEditImage && window._clearModalEditImage(); }
+
+    async function saveModalEdit(idx) {
+        const record = allRecords[idx];
+        const body = document.getElementById('modal-body');
+        const data = {
+            orig_title: record.title,
+            orig_date: record.date,
+            title: body.querySelector('.edit-title').value,
+            quote: body.querySelector('.edit-quote').value,
+            thoughts: body.querySelector('.edit-thoughts').value,
+            summary: body.querySelector('.edit-summary').value,
+            tag: body.querySelector('.edit-tag').value,
+        };
+
+        const state = window._modalEditState;
+        if (state) {
+            if (state.removeImage()) {
+                data.remove_image = true;
+            } else if (state.newImageB64()) {
+                data.image = state.newImageB64();
+            } else if (state.keepImage) {
+                data.keep_image = state.keepImage;
+            }
+        }
+
+        try {
+            const resp = await fetch('/api/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (resp.ok) {
+                closeModal();
+                loadRecords();
+            } else {
+                alert('更新に失敗しました');
+            }
+        } catch (e) { alert('通信エラーが発生しました'); }
+    }
+
+    // ===== 画像検索機能 =====
+    function toggleSearchPanel(idx) {
+        const area = document.getElementById('search-panel-area');
+        if (area.querySelector('.search-panel')) {
+            area.innerHTML = '';
+            return;
+        }
+        const record = allRecords[idx];
+        const defaultQuery = record ? record.title + ' 漫画' : '';
+        area.innerHTML = `
+            <div class="search-panel">
+                <div class="search-bar">
+                    <input type="text" id="search-query" value="${escapeAttr(defaultQuery)}" placeholder="検索キーワードを入力..."
+                           onkeydown="if(event.key==='Enter'){event.preventDefault(); searchImages(${idx});}">
+                    <button onclick="searchImages(${idx})">🔍 検索</button>
+                </div>
+                <div id="search-results-container"></div>
+            </div>
+        `;
+        document.getElementById('search-query').focus();
+        searchImages(idx);
+    }
+
+    async function searchImages(idx) {
+        const queryInput = document.getElementById('search-query');
+        if (!queryInput) return;
+        const query = queryInput.value.trim();
+        if (!query) return;
+
+        const container = document.getElementById('search-results-container');
+        container.innerHTML = '<div class="search-loading">🔍 画像を検索中...</div>';
+
+        try {
+            const resp = await fetch('/api/image-search?q=' + encodeURIComponent(query));
+            const results = await resp.json();
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="search-loading">画像が見つかりませんでした。キーワードを変えて再検索してみてください。</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="search-results"></div>';
+            const grid = container.querySelector('.search-results');
+
+            results.forEach((img, i) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'search-thumb';
+                thumb.title = img.title || '';
+                thumb.onclick = () => applySearchImage(idx, img.image);
+                thumb.innerHTML = `<img src="/api/image-proxy?url=${encodeURIComponent(img.thumbnail)}" alt="${escapeAttr(img.title || '')}" loading="lazy" onerror="this.parentElement.style.display='none'" draggable="true" ondragstart="event.dataTransfer.setData('application/x-ddg-image', '${img.image}')">`;
+                grid.appendChild(thumb);
+            });
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div class="search-loading" style="color:var(--danger-color);">検索中にエラーが発生しました。</div>';
+        }
+    }
+
+    async function applySearchImage(idx, imageUrl, toMainCover = false) {
+        const record = allRecords[idx];
+        if (!record || !imageUrl) return;
+
+        // ギャラリーへの追加時のみ枚数チェック
+        if (!toMainCover && (record.gallery || []).length >= 3) {
+            alert('ギャラリーは最大3枚です。先に画像を削除してください。');
+            return;
+        }
+
+        // 保存中のフィードバックを出せる場所を探す
+        const countLabel = document.querySelector('.gallery-count');
+        const originalText = countLabel ? countLabel.innerText : '';
+        if (countLabel) countLabel.innerText = toMainCover ? '(表紙保存中...)' : '(ギャラリー保存中...)';
+
+        try {
+            const resp = await fetch('/api/image-proxy?url=' + encodeURIComponent(imageUrl));
+            if (!resp.ok) throw new Error('画像の取得に失敗');
+
+            const blob = await resp.blob();
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const b64 = ev.target.result;
+                if (toMainCover) {
+                    await setMainImage(idx, { image: b64 });
+                } else {
+                    await addGalleryImage(idx, b64);
+                }
+                if (countLabel) countLabel.innerText = originalText;
+            };
+            reader.readAsDataURL(blob);
+        } catch (e) {
+            console.error(e);
+            if (countLabel) countLabel.innerText = originalText;
+            alert('画像の取得に失敗しました。別の画像をお試しください。');
+        }
+    }
+
+    // ===== 画像変更の Undo 履歴 =====
+    const imageHistory = [];
+
+    function closeModal(fromHistory = false) {
+        if (!fromHistory && navigateBackWithinApp()) return;
+        closeModalDirect();
+    }
+
+    async function applyHistoryState(state) {
+        if (!state?.__appHistory) return;
+
+        isApplyingHistoryState = true;
+        try {
+            closeModalDirect();
+            if (calendarState.isEntryPopoverOpen) {
+                closeCalendarEntryPopoverDirect();
+            } else {
+                unlockCalendarBodyScroll();
+            }
+
+            applyCurrentMonthStateValue(state.calendarMonth || getCurrentMonthStateValue());
+            await switchTab(state.tab || 'input', { fromHistory: true });
+
+            if ((state.tab || 'input') === 'calendar') {
+                applyCurrentMonthStateValue(state.calendarMonth || getCurrentMonthStateValue());
+                calendarState.selectedDate = state.calendarSelectedDate || '';
+                calendarState.editingEntryId = '';
+                calendarState.isEntryPopoverOpen = false;
+                renderCalendarView();
+
+                if (state.calendarPopoverOpen) {
+                    calendarState.selectedDate = state.calendarSelectedDate || '';
+                    calendarState.editingEntryId = state.calendarEditingEntryId || '';
+                    calendarState.isEntryPopoverOpen = true;
+                    lockCalendarBodyScroll();
+                    renderCalendarView();
+                }
+            }
+
+            if (state.modalType) {
+                await ensureAllRecordsLoaded();
+                const modalIdx = getRecordIndexByIdentity(state.modalTitle || '', state.modalDate || '');
+                if (modalIdx >= 0) {
+                    if (state.modalType === 'edit') {
+                        openModalEdit(modalIdx, { fromHistory: true });
+                    } else {
+                        openModal(modalIdx, { fromHistory: true });
+                    }
+                }
+            }
+
+            if (state.lightboxSrc) {
+                openImageLightbox(state.lightboxSrc, state.lightboxAlt || '拡大画像', { fromHistory: true });
+            }
+        } finally {
+            isApplyingHistoryState = false;
+        }
+    }
+
+    window.addEventListener('popstate', (event) => {
+        if (!event.state?.__appHistory) return;
+        appHistoryDepth = Math.max(0, appHistoryDepth - 1);
+        void applyHistoryState(event.state);
+    });
+
+    // Escキーで表示中のオーバーレイを閉じる / Ctrl+Zで画像を元に戻す
+    document.addEventListener('keydown', async (e) => {
+        if (e.key === 'Escape') {
+            const lightbox = document.getElementById('image-lightbox');
+            if (lightbox?.classList.contains('active')) {
+                closeImageLightbox();
+                return;
+            }
+
+            if (calendarState.isEntryPopoverOpen) {
+                closeCalendarEntryPopover();
+                return;
+            }
+
+            const modal = document.getElementById('modal-overlay');
+            if (modal?.classList.contains('active')) {
+                closeModal();
+                return;
+            }
+        }
+
+        // Ctrl+Z (Mac: Cmd+Z) で画像変更を元に戻す
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && imageHistory.length > 0) {
+            e.preventDefault();
+            const last = imageHistory.pop();
+            try {
+                const data = {
+                    orig_title: last.title,
+                    orig_date: last.date,
+                    title: last.title,
+                    quote: allRecords[last.idx]?.quote || '',
+                    thoughts: allRecords[last.idx]?.thoughts || '',
+                    summary: allRecords[last.idx]?.summary || '',
+                    tag: allRecords[last.idx]?.tag || '',
+                };
+                if (last.prevImage) {
+                    data.keep_image = last.prevImage;
+                } else {
+                    data.remove_image = true;
+                }
+                const resp = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (resp.ok) {
+                    await loadRecords();
+                    openModal(last.idx);
+                }
+            } catch (err) { console.error('Undo failed:', err); }
+        }
+    });
+
+    // ===== お気に入りトグル =====
+    async function toggleFavorite(title, date, btnEl) {
+        try {
+            const resp = await fetch('/api/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, date })
+            });
+            if (resp.ok) {
+                const result = await resp.json();
+                btnEl.textContent = result.favorite ? '★' : '☆';
+                btnEl.classList.toggle('favorited', result.favorite);
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // ===== お気に入り読み込み（グリッド） =====
+    async function loadFavorites() {
+        const container = document.getElementById('favorites-container');
+        try {
+            await fetchAllRecords();
+            const favs = allRecords.filter((record) => record.favorite);
+            container.innerHTML = '';
+
+            if (favs.length === 0) {
+                container.innerHTML = '<div class="panel empty-message" style="grid-column:1/-1;">まだお気に入りがありません。<br>過去の記録タブで⭐を押して登録しましょう！</div>';
+                return;
+            }
+
+            favs.forEach((record) => {
+                // allRecords 内の実際のインデックスを探す
+                const realIdx = allRecords.findIndex(r => r.title === record.title && r.date === record.date);
+                const card = document.createElement('div');
+                card.className = 'manga-card';
+
+                card.innerHTML = `
+                    <div class="manga-card-title">${escapeHTML(record.title)}</div>
+                    <div class="manga-card-actions">
+                        <button class="star-btn favorited" onclick="event.stopPropagation(); toggleFavorite('${escapeAttr(record.title)}', '${escapeAttr(record.date)}', this)">★</button>
+                    </div>
+                `;
+                attachPressableCardBehavior(card, () => openModal(realIdx >= 0 ? realIdx : 0));
+                container.appendChild(card);
+            });
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div class="panel" style="grid-column:1/-1;color:red;text-align:center;font-weight:bold;font-size:1.2rem;padding:32px;">通信エラー</div>';
+        }
+    }
+
+    // ===== 編集モードの開始 (互換用) =====
+    function startEdit(btn, idx) {
+        openModalEdit(idx);
+    }
+
+    // ===== AIで箇条書きまとめ生成 =====
+    async function generateBulletSummary() {
+        const titleInput = document.getElementById('title');
+        const quoteInput = document.getElementById('quote');
+        const thoughtsInput = document.getElementById('thoughts');
+        const tagInput = document.getElementById('tag');
+        const summaryInput = document.getElementById('bullet-summary');
+        const btn = document.getElementById('generate-summary-btn');
+
+        if (!thoughtsInput || !summaryInput) return;
+
+        const title = titleInput ? titleInput.value.trim() : '';
+        const quote = quoteInput ? quoteInput.value.trim() : '';
+        const thoughts = thoughtsInput.value.trim();
+        const tag = tagInput ? tagInput.value.trim() : '';
+
+        if (!thoughts) {
+            alert('感想を入力してください。');
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'まとめ中...';
+        }
+        summaryInput.value = '';
+
+        try {
+            const resp = await fetch('/api/bullet-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, quote, thoughts, tag })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || 'まとめに失敗しました');
+            }
+
+            const data = await resp.json();
+            summaryInput.value = data.summary || '';
+        } catch (e) {
+            console.error(e);
+            alert(e.message || '通信エラーが発生しました');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'AIで箇条書きにまとめる';
+            }
+        }
+    }
+
+    // ===== 詳細モーダルからAIでまとめる（保存まで行う）=====
+    async function generateSummaryForModal(idx, btnEl) {
+        const record = allRecords[idx];
+        if (!record) return;
+
+        if (!record.thoughts || !record.thoughts.trim()) {
+            alert('感想（thoughts）を入力してください。');
+            return;
+        }
+
+        const prevText = btnEl ? btnEl.textContent : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.textContent = 'まとめ中...';
+        }
+
+        try {
+            const resp = await fetch('/api/bullet-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: record.title,
+                    quote: record.quote || '',
+                    thoughts: record.thoughts || '',
+                    tag: record.tag || ''
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || 'まとめに失敗しました');
+            }
+
+            const data = await resp.json();
+            const summary = (data.summary || '').trim();
+            if (!summary) {
+                alert('AIのまとめが生成できませんでした。');
+                return;
+            }
+
+            const updateResp = await fetch('/api/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orig_title: record.title,
+                    orig_date: record.date,
+                    title: record.title,
+                    quote: record.quote || '',
+                    thoughts: record.thoughts || '',
+                    tag: record.tag || '',
+                    summary
+                })
+            });
+
+            if (!updateResp.ok) {
+                const err = await updateResp.json().catch(() => ({}));
+                throw new Error(err.error || '更新に失敗しました');
+            }
+
+            await loadRecords();
+            const realIdx = allRecords.findIndex(r => r.title === record.title && r.date === record.date);
+            openModal(realIdx >= 0 ? realIdx : idx);
+        } catch (e) {
+            console.error(e);
+            alert(e.message || '通信エラーが発生しました');
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.textContent = prevText || 'AIでまとめる';
+            }
+        }
+    }
+
+    // ===== 編集モーダルの入力値を使ってAIで生成（保存は手動）=====
+    async function generateSummaryInEdit(idx, btnEl) {
+        const record = allRecords[idx];
+        if (!record) return;
+
+        const body = document.getElementById('modal-body');
+        if (!body) return;
+
+        const titleVal = body.querySelector('.edit-title')?.value || record.title;
+        const quoteVal = body.querySelector('.edit-quote')?.value || record.quote || '';
+        const thoughtsVal = body.querySelector('.edit-thoughts')?.value || record.thoughts || '';
+        const tagVal = body.querySelector('.edit-tag')?.value || record.tag || '';
+
+        if (!thoughtsVal || !thoughtsVal.trim()) {
+            alert('感想（thoughts）を入力してください。');
+            return;
+        }
+
+        const summaryArea = body.querySelector('.edit-summary');
+        if (!summaryArea) return;
+
+        const prevText = btnEl ? btnEl.textContent : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.textContent = '生成中...';
+        }
+
+        try {
+            const resp = await fetch('/api/bullet-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: titleVal,
+                    quote: quoteVal,
+                    thoughts: thoughtsVal,
+                    tag: tagVal
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || '生成に失敗しました');
+            }
+
+            const data = await resp.json();
+            const summary = (data.summary || '').trim();
+            summaryArea.value = summary;
+        } catch (e) {
+            console.error(e);
+            alert(e.message || '通信エラーが発生しました');
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.textContent = prevText || 'AIでまとめる';
+            }
+        }
+    }
+    // ===== 新規保存 =====
+    async function saveRecord() {
+        const titleInput = document.getElementById('title');
+        const quoteInput = document.getElementById('quote');
+        const thoughtsInput = document.getElementById('thoughts');
+        const tagInput = document.getElementById('tag');
+        const summaryInput = document.getElementById('bullet-summary');
+        const submitBtn = document.getElementById('submit-btn');
+
+        const title = titleInput.value.trim();
+        const thoughts = thoughtsInput.value.trim();
+        if (!title || !thoughts) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '保存中...';
+
+        const data = {
+            title, quote: quoteInput.value.trim(),
+            thoughts, tag: tagInput.value.trim(),
+            summary: summaryInput ? summaryInput.value.trim() : '',
+            image: currentImageBase64
+        };
+
+        try {
+            const response = await fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                titleInput.value = '';
+                quoteInput.value = '';
+                thoughtsInput.value = '';
+                tagInput.value = '';
+                if (summaryInput) summaryInput.value = '';
+                clearImage();
+                switchTab('records');
+            } else {
+                const err = await response.json();
+                alert("保存エラー: " + err.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("保存に失敗しました。");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '保存する';
+        }
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g,
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+
+    function escapeAttr(str) {
+        return str.replace(/[&<>"']/g,
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[tag] || tag)
+        );
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        await loadRecords();
+        const initialState = buildHistoryState();
+        history.replaceState(initialState, '');
+        history.pushState(initialState, '');
+        appHistoryDepth = 1;
+    });
+</script>
+</body>
+</html>

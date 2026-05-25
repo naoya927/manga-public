@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+<title id="title">感想タブ</title>
+<desc id="desc">ノートと鉛筆で感想記録を表すアイコン</desc>
+<rect x="20" y="24" width="120" height="112" rx="24" fill="#f8fafc" stroke="#10b981" stroke-width="8"/>
+<rect x="36" y="44" width="56" height="72" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="6"/>
+<rect x="46" y="58" width="36" height="6" rx="3" fill="#3b82f6"/>
+<rect x="46" y="72" width="30" height="6" rx="3" fill="#10b981"/>
+<rect x="46" y="86" width="26" height="6" rx="3" fill="#f59e0b"/>
+<path d="M101 103l-8 19 20-7 20-46-12-6-20 40z" fill="#f59e0b"/>
+<path d="M121 57l12 6 4-8c2.2-4.3.5-9.6-3.8-11.8-4.3-2.2-9.6-.5-11.8 3.8l-4.4 9z" fill="#3b82f6"/>
+<path d="M93 122l4-14 10 5-14 9z" fill="#0f172a" opacity="0.18"/>
+</svg>
